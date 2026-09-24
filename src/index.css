@@ -1,0 +1,805 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&display=swap');
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Official Department of Government Enablement (DGE) Color Palette */
+  --dge-tech-blue: #215A9E;
+  --dge-light-blue: #7DA1C4;
+  --dge-reliable-blue: #063360;
+  --dge-white: #FFFFFF;
+  --dge-grey: #545860;
+  --dge-black: #000000;
+
+  --dge-bg-primary: #FFFFFF;
+  --dge-bg-soft: #F5F8FB;
+
+  --dge-text-primary: #063360;
+  --dge-text-secondary: #545860;
+
+  --dge-border-soft: rgba(125, 161, 196, 0.25);
+  --dge-glass-surface: rgba(255, 255, 255, 0.72);
+  --dge-glass-border: rgba(125, 161, 196, 0.22);
+  --dge-shadow: 0 18px 46px rgba(6, 51, 96, 0.10);
+
+  /* Legacy Brand Aliases mapped strictly to DGE Tokens */
+  --geovision-blue: #215A9E; /* DGE Tech Blue */
+  --geovision-blue-hover: #063360; /* DGE Reliable Blue */
+  --azure-blue: #7DA1C4; /* DGE Light Blue */
+  --electric-blue: #215A9E; /* DGE Tech Blue */
+  --cyan-accent: #7DA1C4; /* DGE Light Blue */
+  --deep-space-blue: #063360; /* DGE Reliable Blue */
+  --pale-blue: rgba(125, 161, 196, 0.12);
+  --frost-surface: rgba(255, 255, 255, 0.72);
+  --bg-page: #F5F8FB;
+  --text-main: #063360;
+  --text-secondary: #545860;
+  --border-glass: rgba(125, 161, 196, 0.25);
+
+  /* Official DGE Font Family — Noto Kufi Arabic for BOTH English and Arabic */
+  --font-dge: 'Noto Kufi Arabic', Arial, sans-serif;
+  --font-en: 'Noto Kufi Arabic', Arial, sans-serif;
+  --font-ar: 'Noto Kufi Arabic', Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-dge);
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+[dir="rtl"] body,
+[dir="rtl"],
+html {
+  font-family: var(--font-dge);
+}
+
+/* Official DGE Glassmorphism Hierarchy */
+
+/* Level 1 — DGE Light Glass (Pills, badges, small controls) */
+.glass-level-1 {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(125, 161, 196, 0.25);
+  box-shadow: 0 4px 18px rgba(6, 51, 96, 0.05);
+}
+
+/* Level 2 — Standard DGE Glass (Navigation capsules, AI search, tool dock, feature cards) */
+.glass-level-2,
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(125, 161, 196, 0.22);
+  box-shadow:
+    0 18px 45px rgba(6, 51, 96, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.80);
+}
+
+/* Level 3 — DGE Strong Frosted Glass (GeoVision AI panel, drawers, authentication, modals) */
+.glass-level-3 {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(30px) saturate(155%);
+  -webkit-backdrop-filter: blur(30px) saturate(155%);
+  border: 1px solid rgba(125, 161, 196, 0.28);
+  box-shadow:
+    0 22px 56px rgba(6, 51, 96, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90);
+}
+
+/* DGE Blue Soft Ambient Glow */
+.glow-blue-lg {
+  box-shadow:
+    0 0 45px -5px rgba(33, 90, 158, 0.22),
+    0 18px 45px rgba(6, 51, 96, 0.10);
+}
+
+/* Official Department of Government Enablement (DGE) Spatial Canvas Background */
+.bg-spatial-canvas {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(125, 161, 196, 0.24), transparent 32%),
+    radial-gradient(circle at 85% 35%, rgba(33, 90, 158, 0.15), transparent 30%),
+    linear-gradient(135deg, #FFFFFF 0%, #F5F8FB 55%, rgba(125, 161, 196, 0.10) 100%);
+}
+
+/* Premium Dark Mode Foundation (Obsidian Slate & Cyber Blue Spotlights) */
+.dark body,
+.dark,
+[data-theme="dark"] body,
+[data-theme="dark"] {
+  background-color: #070b14;
+  color: #F8FAFC;
+}
+
+.dark .bg-spatial-canvas,
+[data-theme="dark"] .bg-spatial-canvas {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(56, 189, 248, 0.12), transparent 42%),
+    radial-gradient(circle at 85% 65%, rgba(99, 102, 241, 0.10), transparent 42%),
+    linear-gradient(135deg, #070b14 0%, #0f172a 55%, #080c18 100%);
+}
+
+.dark .glass-level-1,
+[data-theme="dark"] .glass-level-1 {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.dark .glass-level-2,
+.dark .glass-panel,
+[data-theme="dark"] .glass-level-2,
+[data-theme="dark"] .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.dark .glass-level-3,
+[data-theme="dark"] .glass-level-3 {
+  background: rgba(11, 17, 32, 0.94);
+  backdrop-filter: blur(34px) saturate(160%);
+  -webkit-backdrop-filter: blur(34px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dark input,
+.dark select,
+.dark textarea,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color-scheme: dark;
+  color: #F8FAFC;
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: #38BDF8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #94A3B8;
+  opacity: 0.9;
+}
+
+.dark option,
+[data-theme="dark"] option {
+  background-color: #0F172A;
+  color: #F8FAFC;
+}
+
+/* High-Contrast Readability System Overrides for Dark Mode */
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #F8FAFC !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #E2E8F0 !important;
+}
+
+.dark .text-slate-500 {
+  color: #CBD5E1 !important;
+}
+
+.dark .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+.dark .text-\[\#063360\] {
+  color: #FFFFFF !important;
+}
+
+.dark .text-\[\#215A9E\],
+.dark .text-geovision-blue {
+  color: #FFFFFF !important;
+}
+
+.dark .text-\[\#545860\] {
+  color: #CBD5E1 !important;
+}
+
+.dark .text-\[\#7DA1C4\] {
+  color: #FFFFFF !important;
+}
+
+/* Exception: Preserve high-contrast dark text on solid light elements (e.g. white CTA buttons) in dark mode */
+.dark .bg-white.text-\[\#063360\],
+.dark .bg-white .text-\[\#063360\],
+.dark button.bg-white,
+.dark button.bg-white *,
+.dark .bg-white button,
+.dark .dark-preserve-dark-text,
+.dark .dark-preserve-dark-text * {
+  color: #063360 !important;
+}
+
+/* Custom Blue & Red Palette Helpers */
+.bg-geovision-blue {
+  background-color: var(--geovision-blue);
+}
+.hover\:bg-geovision-blue-dark:hover {
+  background-color: var(--geovision-blue-hover);
+}
+.text-geovision-blue {
+  color: var(--geovision-blue);
+}
+.border-geovision-blue {
+  border-color: var(--geovision-blue);
+}
+
+.bg-dge-red {
+  background-color: #E11D48;
+}
+.text-dge-red {
+  color: #E11D48;
+}
+.border-dge-red {
+  border-color: #E11D48;
+}
+
+/* Leaflet Canvas Container Fixes */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  font-family: inherit;
+}
+
+/* GeoVision Glassmorphism Theme Leaflet Popups */
+.leaflet-popup {
+  margin-bottom: 24px;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 22px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 20px 45px rgba(7, 27, 51, 0.18),
+    0 0 25px rgba(23, 107, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: rgba(10, 25, 46, 0.90);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(130, 190, 255, 0.22);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 25px rgba(23, 107, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #F4F8FC;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  font-family: var(--font-en);
+  line-height: 1.4;
+  min-width: 220px;
+}
+
+.leaflet-popup-tip-container {
+  width: 30px;
+  height: 15px;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 12px rgba(7, 27, 51, 0.12);
+  width: 14px;
+  height: 14px;
+}
+
+.dark .leaflet-popup-tip {
+  background: rgba(10, 25, 46, 0.90);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  width: 26px !important;
+  height: 26px !important;
+  line-height: 24px !important;
+  border-radius: 9999px !important;
+  background: rgba(16, 34, 58, 0.06);
+  color: #66788E !important;
+  font-size: 16px !important;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  background: #176BFF !important;
+  color: #ffffff !important;
+  transform: scale(1.08);
+}
+
+.dark .leaflet-container a.leaflet-popup-close-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94A3B8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark .leaflet-container a.leaflet-popup-close-button:hover {
+  background: #176BFF !important;
+  color: #ffffff !important;
+}
+
+/* Refined Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+}
+
+/* Custom Scrollbar for Browse Side Panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(23, 107, 255, 0.4);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(23, 107, 255, 0.8);
+}
+
+/* Custom Leaflet Category Pointer Pin Styles */
+.custom-leaflet-marker-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.geovision-map-pointer {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+}
+
+.custom-leaflet-marker-pin:hover .geovision-map-pointer {
+  transform: translateY(-5px) scale(1.18) !important;
+  z-index: 9999 !important;
+}
+
+/* Animated Floating Effects & Gradient Text */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, #176BFF 0%, #3B8EFF 50%, #70D7FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom GeoVision Leaflet Popup Glassmorphism Styling */
+.leaflet-popup.geovision-map-popup {
+  z-index: 1000 !important;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(30px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.90) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 24px 58px rgba(6, 51, 96, 0.16),
+    0 4px 18px rgba(33, 90, 158, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  padding: 6px !important;
+  transition: all 0.3s ease;
+}
+
+.dark .leaflet-popup.geovision-map-popup .leaflet-popup-content-wrapper {
+  background: rgba(6, 51, 96, 0.82) !important;
+  backdrop-filter: blur(32px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(165%) !important;
+  border: 1px solid rgba(125, 161, 196, 0.28) !important;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  color: #FFFFFF !important;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-content {
+  margin: 6px 10px 6px 10px !important;
+  line-height: 1.4;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-tip-container {
+  overflow: visible;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.80) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 8px 18px rgba(6, 51, 96, 0.12) !important;
+}
+
+.dark .leaflet-popup.geovision-map-popup .leaflet-popup-tip {
+  background: rgba(6, 51, 96, 0.84) !important;
+  border: 1px solid rgba(125, 161, 196, 0.24) !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-close-button {
+  top: 8px !important;
+  right: 10px !important;
+  color: #7DA1C4 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  padding: 2px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  background: rgba(125, 161, 196, 0.14) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: all 0.2s !important;
+}
+
+[dir="rtl"] .leaflet-popup.geovision-map-popup .leaflet-popup-close-button {
+  right: auto !important;
+  left: 10px !important;
+}
+
+.leaflet-popup.geovision-map-popup .leaflet-popup-close-button:hover {
+  color: #215A9E !important;
+  background: rgba(33, 90, 158, 0.22) !important;
+  transform: scale(1.1);
+}
+
+.dark .leaflet-popup.geovision-map-popup .leaflet-popup-close-button {
+  color: #94A3B8 !important;
+  background: rgba(255, 255, 255, 0.10) !important;
+}
+
+.dark .leaflet-popup.geovision-map-popup .leaflet-popup-close-button:hover {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Inner Glass Elements inside Map Popup */
+.geovision-map-popup .popup-meta-box {
+  background: rgba(33, 90, 158, 0.06) !important;
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(125, 161, 196, 0.22);
+  border-radius: 14px;
+  padding: 7px 10px;
+  margin-top: 6px;
+}
+
+.geovision-map-popup .popup-meta-box * {
+  background: transparent !important;
+}
+
+.dark .geovision-map-popup .popup-meta-box {
+  background: rgba(4, 31, 59, 0.55) !important;
+  border: 1px solid rgba(125, 161, 196, 0.20);
+}
+
+.dark .geovision-map-popup .popup-meta-box * {
+  background: transparent !important;
+}
+
+.geovision-map-popup .popup-title {
+  color: #063360;
+}
+
+.dark .geovision-map-popup .popup-title {
+  color: #FFFFFF;
+}
+
+.geovision-map-popup .popup-text-sub {
+  color: #545860;
+}
+
+.dark .geovision-map-popup .popup-text-sub {
+  color: #94A3B8;
+}
+
+.geovision-map-popup .popup-meta-val {
+  color: #063360;
+}
+
+.dark .geovision-map-popup .popup-meta-val {
+  color: #F8FAFC;
+}
+
+.geovision-map-popup .popup-ask-ai-btn {
+  background: linear-gradient(135deg, #215A9E 0%, #176BFF 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(23, 107, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.geovision-map-popup .popup-ask-ai-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(23, 107, 255, 0.45);
+}
+
+.geovision-map-popup .popup-fav-btn {
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+/* ------------------------------------------------------------------------- */
+/* OFFICIAL PRINT STYLES FOR PRINTING & EXPORTING PDF REPORTS */
+/* ------------------------------------------------------------------------- */
+@media print {
+  /* Hide background floating app controls & nav elements when printing */
+  header, nav, aside, footer, .leaflet-control-container, .no-print {
+    display: none !important;
+  }
+
+  /* Ensure root layout containers remain visible and expand for paper output */
+  html, body, #root {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Override max-height and overflow constraints on modal containers when printing */
+  .fixed.inset-0.z-\[9999\],
+  .fixed.inset-0.z-\[9999\] * {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Expand modal overlay container to full A4 page width */
+  .fixed.inset-0.z-\[9999\] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 999999 !important;
+  }
+
+  /* Hide modal top header bar and bottom action buttons when printing */
+  .fixed.inset-0.z-\[9999\] .shrink-0 {
+    display: none !important;
+  }
+
+  /* Make printable report container full-width and borderless on paper */
+  #sdi-printable-report {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 0 !important;
+  }
+
+  #sdi-printable-report * {
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+}
+
+/* Animated Route Line Animation */
+@keyframes routeDashMarch {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.animated-route-polyline {
+  stroke-dasharray: 8, 8;
+  animation: routeDashMarch 1.2s linear infinite;
+}
+
+/* User Location GPS Indicator Pulse */
+@keyframes userLocationPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.user-location-pulse {
+  animation: userLocationPulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+/* Dynamic Geographic Location Boundary Highlight Styles */
+@keyframes boundaryDashAnimation {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.geovision-boundary-district-polygon {
+  stroke-dasharray: 8, 6;
+  animation: boundaryDashAnimation 3.5s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.45));
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.geovision-boundary-district-polygon:hover {
+  stroke-width: 4.5px !important;
+  fill-opacity: 0.28 !important;
+}
+
+.geovision-boundary-district-polygon.active-boundary {
+  filter: drop-shadow(0 0 12px rgba(37, 99, 235, 0.75));
+  stroke-width: 4px !important;
+}
+
+.geovision-boundary-parcel-polygon {
+  filter: drop-shadow(0 0 8px rgba(2, 132, 199, 0.55));
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.geovision-boundary-parcel-polygon:hover {
+  stroke-width: 3.5px !important;
+  fill-opacity: 0.38 !important;
+}
+
+.geovision-boundary-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(37, 99, 235, 0.4) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(6, 51, 96, 0.18) !important;
+  padding: 0 !important;
+}
+
+.dark .geovision-boundary-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* GeoVision Hero Brand Gradient Typography Rules */
+.geovision-title-ge {
+  background: linear-gradient(90deg, #012661 0%, #012661 60%, #005A9C 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.95)) drop-shadow(0 2px 6px rgba(255, 255, 255, 0.85)) !important;
+}
+
+.geovision-title-vision {
+  background: linear-gradient(90deg, #012661 0%, #006AA8 40%, #00B3C2 60%, #00B3C2 82%, #5CDE6A 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.95)) drop-shadow(0 2px 6px rgba(255, 255, 255, 0.85)) !important;
+}
+
+/* Dark mode GeoVision Title High-Contrast Gradient Rules */
+.dark .geovision-title-ge {
+  background: linear-gradient(90deg, #60A5FA 0%, #38BDF8 70%, #00B3C2 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.6)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.8)) !important;
+}
+
+.dark .geovision-title-vision {
+  background: linear-gradient(90deg, #38BDF8 0%, #00B3C2 55%, #5CDE6A 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.6)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.8)) !important;
+}
+
+
+
