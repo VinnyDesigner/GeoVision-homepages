@@ -14,7 +14,7 @@ export const BasemapGallery: React.FC = () => {
   ];
 
   return (
-    <div className="absolute top-20 left-18 sm:left-20 rtl:left-auto rtl:right-18 sm:rtl:right-20 z-[600] w-80 glass-level-3 rounded-3xl p-5 shadow-2xl border border-white/80 dark:border-slate-800 animate-fade-in glow-blue">
+    <div className="absolute top-[76px] sm:top-[86px] left-18 sm:left-20 rtl:left-auto rtl:right-18 sm:rtl:right-20 z-[600] w-80 glass-level-3 rounded-3xl p-5 shadow-2xl border border-white/80 dark:border-slate-800 animate-fade-in glow-blue">
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 mb-3">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-xl bg-geovision-blue text-white flex items-center justify-center font-bold">

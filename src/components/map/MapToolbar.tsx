@@ -148,7 +148,7 @@ export const MapToolbar: React.FC = () => {
   };
 
   return (
-    <div className="absolute top-4 sm:top-6 left-3 sm:left-4 rtl:left-auto rtl:right-3 sm:rtl:right-4 z-[600] flex flex-col items-center">
+    <div className="absolute top-[76px] sm:top-[86px] left-3 sm:left-4 rtl:left-auto rtl:right-3 sm:rtl:right-4 z-[600] flex flex-col items-center">
       {/* Single Unified Capsule Group */}
       <div className="glass-level-3 bg-white/85 dark:bg-slate-900/90 backdrop-blur-xl p-1 rounded-2xl shadow-xl border border-white/80 dark:border-slate-700/80 flex flex-col items-center gap-1 w-12 sm:w-13 transition-all duration-300">
         

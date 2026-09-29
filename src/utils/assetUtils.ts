@@ -12,9 +12,9 @@ export const getAssetUrl = (path: string): string => {
   const cleanPath = path.replace(/^(\.\/|\/)/, '');
 
   if (typeof window !== 'undefined') {
-    // If running in browser and navigating deep paths like /home2, /home3 or /home4, strip the sub-route so assets load from base
+    // If running in browser and navigating deep paths or legacy sub-routes, strip them so assets load from base
     let basePath = window.location.pathname
-      .replace(/\/home[234](\.html|\/index\.html|\/)?$/, '')
+      .replace(/\/home[2345]?(\.html|\/index\.html|\/)?$/, '')
       .replace(/\/index\.html$/, '');
     if (!basePath.endsWith('/')) {
       basePath += '/';

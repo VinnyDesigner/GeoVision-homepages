@@ -1,380 +1,404 @@
-import React, { useState } from 'react';
-import { AISearchBar } from '../ai/AISearchBar';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppState } from '../../context/AppStateContext';
 import { getAssetUrl } from '../../utils/assetUtils';
 import {
-  MapPin,
-  GraduationCap,
-  BarChart3,
-  Building2,
-  Trees,
-  Bus,
-  ShieldCheck,
-  Landmark,
-  Zap,
-  Compass,
-  Stethoscope,
-  ChevronDown,
-  ChevronUp,
+  Search,
+  ArrowRight,
+  ArrowLeft,
   Sparkles,
   Map,
   Layers,
 } from 'lucide-react';
 
+/**
+ * Determines theme based on system time:
+ * - Sunrise (06:00) to Sunset (18:00): 'light'
+ * - Sunset (18:00) to Sunrise (06:00): 'dark'
+ */
+export const getSystemTimeTheme = (): 'light' | 'dark' => {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const sunriseMinutes = 6 * 60; // 06:00 (6:00 AM)
+  const sunsetMinutes = 18 * 60; // 18:00 (6:00 PM)
+
+  return currentMinutes >= sunriseMinutes && currentMinutes < sunsetMinutes ? 'light' : 'dark';
+};
+
 export const LandingPage: React.FC = () => {
-  const { language, theme, setCurrentView, sendAIMessage } = useAppState();
+  const { language, theme, setTheme, setCurrentView, sendAIMessage } = useAppState();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAllExamples, setShowAllExamples] = useState(false);
 
-  const [examplesExpanded, setExamplesExpanded] = useState(false);
+  // Track if user has manually toggled the theme so the automatic sync doesn't overwrite manual choice
+  const hasManualOverrideRef = useRef(false);
+  const lastThemeRef = useRef(theme);
 
+  // Sync with system time upon mounting and on periodic check
+  useEffect(() => {
+    const systemTheme = getSystemTimeTheme();
+    if (!hasManualOverrideRef.current && theme !== systemTheme) {
+      setTheme(systemTheme);
+      lastThemeRef.current = systemTheme;
+    } else {
+      lastThemeRef.current = theme;
+    }
 
-  const EXAMPLE_QUESTIONS = [
+    const intervalId = setInterval(() => {
+      if (!hasManualOverrideRef.current) {
+        const currentSystemTheme = getSystemTimeTheme();
+        if (currentSystemTheme !== lastThemeRef.current) {
+          setTheme(currentSystemTheme);
+          lastThemeRef.current = currentSystemTheme;
+        }
+      }
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Detect manual theme toggle (e.g. from the header toggle button)
+  useEffect(() => {
+    if (theme !== lastThemeRef.current) {
+      hasManualOverrideRef.current = true;
+      lastThemeRef.current = theme;
+    }
+  }, [theme]);
+
+  // Set view-home class on root html element for responsive viewport lock
+  useEffect(() => {
+    document.documentElement.classList.add('view-home');
+    return () => {
+      document.documentElement.classList.remove('view-home');
+    };
+  }, []);
+
+  const isRtl = language === 'ar';
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      sendAIMessage(searchQuery.trim());
+      setCurrentView('map');
+    }
+  };
+
+  const handlePillClick = (queryEn: string, queryAr: string) => {
+    const q = isRtl ? queryAr : queryEn;
+    sendAIMessage(q);
+    setCurrentView('map');
+  };
+
+  const SUGGESTED_QUESTIONS = [
     {
       id: 'parks',
-      icon: Trees,
-      textEn: 'Parks near me',
-      textAr: 'الحدائق القريبة مني',
+      labelEn: 'Parks near me',
+      labelAr: 'الحدائق القريبة مني',
       queryEn: 'Show public parks near me in Abu Dhabi',
       queryAr: 'عرض الحدائق العامة القريبة مني في أبوظبي',
     },
     {
       id: 'schools',
-      icon: GraduationCap,
-      textEn: 'Schools near bus stations',
-      textAr: 'المدارس القريبة من محطات الحافلات',
+      labelEn: 'Schools near bus stations',
+      labelAr: 'المدارس القريبة من محطات الحافلات',
       queryEn: 'Show schools near bus stations in Abu Dhabi',
       queryAr: 'عرض المدارس بالقرب من محطات الحافلات في أبوظبي',
     },
     {
-      id: 'compare',
-      icon: BarChart3,
-      textEn: 'Compare facilities by district',
-      textAr: 'مقارنة المرافق حسب المنطقة',
-      queryEn: 'Compare facilities by district in Abu Dhabi',
-      queryAr: 'مقارنة المرافق والخدمات حسب القطاع والمنطقة في أبوظبي',
-    },
-    {
-      id: 'tamm',
-      icon: Building2,
-      textEn: 'TAMM customer centers',
-      textAr: 'مراكز تم الحكومية',
-      queryEn: 'Show TAMM customer happiness centers in Abu Dhabi',
-      queryAr: 'عرض مراكز تم لخدمة المتعاملين في أبوظبي',
-    },
-    {
       id: 'hospitals',
-      icon: MapPin,
-      textEn: 'Hospitals near me',
-      textAr: 'المستشفيات القريبة مني',
+      labelEn: 'Hospitals near me',
+      labelAr: 'المستشفيات القريبة مني',
       queryEn: 'Find hospitals near me in Abu Dhabi',
       queryAr: 'عرض المستشفيات القريبة مني في أبوظبي',
     },
     {
-      id: 'transit',
-      icon: Bus,
-      textEn: 'Bus stations & transit hubs',
-      textAr: 'محطات الحافلات ومراكز النقل',
-      queryEn: 'Show bus stations and transit hubs in Abu Dhabi',
-      queryAr: 'عرض محطات الحافلات ومراكز النقل في أبوظبي',
-    },
-    {
-      id: 'safety',
-      icon: ShieldCheck,
-      textEn: 'Police & civil defense',
-      textAr: 'مراكز الشرطة والدفاع المدني',
-      queryEn: 'Show police and civil defense stations in Abu Dhabi',
-      queryAr: 'عرض مراكز الشرطة والدفاع المدني في أبوظبي',
-    },
-    {
-      id: 'culture',
-      icon: Landmark,
-      textEn: 'Cultural & heritage sites',
-      textAr: 'المعالم الثقافية والتراثية',
-      queryEn: 'Show cultural and heritage landmarks in Abu Dhabi',
-      queryAr: 'عرض المعالم الثقافية والتراثية في أبوظبي',
+      id: 'tamm',
+      labelEn: 'Where are TAMM centers?',
+      labelAr: 'أين توجد مراكز تم؟',
+      queryEn: 'Show TAMM customer happiness centers in Abu Dhabi',
+      queryAr: 'عرض مراكز تم لخدمة المتعاملين في أبوظبي',
     },
     {
       id: 'charging',
-      icon: Zap,
-      textEn: 'EV charging stations',
-      textAr: 'محطات شحن السيارات الكهربائية',
+      labelEn: 'EV charging stations',
+      labelAr: 'محطات شحن السيارات الكهربائية',
       queryEn: 'Show EV charging stations in Abu Dhabi',
       queryAr: 'عرض محطات شحن المركبات الكهربائية في أبوظبي',
     },
+  ];
+
+  const BOTTOM_CARDS = [
     {
-      id: 'nature',
-      icon: Compass,
-      textEn: 'Mangrove & nature reserves',
-      textAr: 'محميات القرم والطبيعة',
-      queryEn: 'Show mangrove parks and nature reserves in Abu Dhabi',
-      queryAr: 'عرض منتزهات القرم والمحميات الطبيعية في أبوظبي',
+      id: 'ask_geovision',
+      titleEn: 'Ask GeoVision',
+      titleAr: 'اسأل GeoVision',
+      descEn: 'Get instant answers about places, services and spatial data.',
+      descAr: 'احصل على إجابات فورية حول الأماكن والخدمات والبيانات المكانية.',
+      icon: Sparkles,
+      iconContainerLight: 'bg-blue-50 border border-blue-200/90 text-blue-600',
+      iconContainerDark: 'dark:bg-blue-500/20 dark:border-blue-400/50 dark:text-blue-300 dark:shadow-[0_0_20px_rgba(59,130,246,0.35)]',
+      action: () => {
+        const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+        input?.focus();
+      },
     },
     {
-      id: 'pharmacy',
-      icon: Stethoscope,
-      textEn: '24/7 pharmacies',
-      textAr: 'صيدليات تعمل 24 ساعة',
-      queryEn: 'Show 24/7 pharmacies in Abu Dhabi',
-      queryAr: 'عرض الصيدليات التي تعمل 24 ساعة في أبوظبي',
+      id: 'explore_map',
+      titleEn: 'Explore Map',
+      titleAr: 'استكشف الخريطة',
+      descEn: 'Browse, search and analyse data across Abu Dhabi.',
+      descAr: 'تصفح وابحث وحلل البيانات في جميع أنحاء أبوظبي.',
+      icon: Map,
+      iconContainerLight: 'bg-cyan-50 border border-cyan-200/90 text-cyan-600',
+      iconContainerDark: 'dark:bg-cyan-500/20 dark:border-cyan-400/50 dark:text-cyan-300 dark:shadow-[0_0_20px_rgba(6,182,212,0.35)]',
+      action: () => setCurrentView('map'),
+    },
+    {
+      id: 'discover_data',
+      titleEn: 'Discover Data',
+      titleAr: 'اكتشف البيانات',
+      descEn: 'Find and explore authoritative public datasets.',
+      descAr: 'ابحث واستكشف مجموعات البيانات العامة والموثوقة.',
+      icon: Layers,
+      iconContainerLight: 'bg-emerald-50 border border-emerald-200/90 text-emerald-600',
+      iconContainerDark: 'dark:bg-emerald-500/20 dark:border-emerald-400/50 dark:text-emerald-300 dark:shadow-[0_0_20px_rgba(16,185,129,0.35)]',
+      action: () => setCurrentView('categories'),
     },
   ];
 
-  const displayedExamples = examplesExpanded ? EXAMPLE_QUESTIONS : EXAMPLE_QUESTIONS.slice(0, 3);
-
-  const handleExampleClick = (queryEn: string, queryAr: string) => {
-    const q = language === 'ar' ? queryAr : queryEn;
-    sendAIMessage(q);
-    setCurrentView('map');
-  };
-
   return (
-    <div className="relative w-full min-h-screen pt-20 sm:pt-20 lg:pt-22 pb-8 sm:pb-12 px-4 sm:px-8 md:px-12 lg:px-16 flex flex-col items-center sm:items-start rtl:sm:items-start justify-between bg-spatial-canvas dark:bg-[#041F3B] overflow-y-auto overflow-x-hidden">
+    <div className="home-viewport home5-viewport relative w-full h-full min-h-full pt-20 sm:pt-24 pb-6 sm:pb-8 px-4 sm:px-8 md:px-12 lg:px-16 flex flex-col justify-center overflow-hidden">
       
-      {/* Crisp Homepage Background Image Layer */}
+      {/* Background Image Layer - using public/newbg2-dark.jpg for dark theme and newbg2.jpg for light theme */}
       <img
-        src={getAssetUrl(theme === 'dark' ? 'homepage-bg-dark (4).png' : 'homepage-bg-light (5).jpg')}
-        alt="GeoVision Abu Dhabi Spatial Canvas"
-        className={`absolute inset-0 w-full h-full object-cover object-right sm:object-center transition-all duration-500 pointer-events-none z-0 opacity-100 ${
-          language === 'ar' ? '-scale-x-100' : ''
-        }`}
+        src={getAssetUrl(theme === 'dark' ? 'newbg2-dark.jpg' : 'newbg2.jpg')}
+        alt="GeoVision Abu Dhabi Spatial Intelligence"
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0"
       />
 
-      {/* Subtle Mobile Readability Scrim */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/30 to-transparent dark:from-[#041F3B]/80 dark:via-[#041F3B]/40 dark:to-transparent sm:hidden pointer-events-none z-0" />
+      {/* Clean, natural subtle scrim - Abu Dhabi skyline remains vivid and clear while text remains crisp */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/45 via-white/20 to-white/35 dark:from-[#021327]/55 dark:via-[#021327]/25 dark:to-[#021327]/55 pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/30 via-transparent to-transparent dark:from-transparent dark:via-[#021327]/15 dark:to-transparent pointer-events-none z-0" />
 
-      {/* Hero & Search Launchpad */}
-      <div className="relative z-10 w-full max-w-5xl text-center sm:text-left rtl:sm:text-right space-y-3 sm:space-y-4 my-auto flex flex-col items-center sm:items-start rtl:sm:items-start">
+      {/* Main Hero & Search Launchpad Section - Centered Layout */}
+      <div className="relative z-10 w-full max-w-4xl lg:max-w-5xl xl:max-w-5xl mx-auto text-center my-auto flex flex-col items-center">
         
-        {/* GeoVision Hero Brand Logo with Dynamic Animated Globe & Tagline */}
-        <div className="flex flex-col items-center sm:items-start rtl:sm:items-start w-full py-1">
-          {/* Main GeoVision Title with Exact Reference Gradient Color Palette */}
-          <div className="flex items-center justify-center sm:justify-start rtl:sm:justify-start flex-nowrap text-5xl xs:text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black font-sans tracking-tight select-none leading-none min-w-0">
-            {/* "Ge" text */}
-            <span className="geovision-title-ge relative z-10 shrink-0">
-              Ge
-            </span>
-
-            {/* Custom UAE Globe Logo - Clean without white shadow */}
-            <div className="relative inline-flex items-center justify-center -ml-0.5 sm:-ml-1 md:-ml-1.5 -mr-1.5 sm:-mr-2.5 md:-mr-3 shrink-0 w-[1.08em] h-[1.08em] self-center">
-              <img
-                src={getAssetUrl('globe-logo.png')}
-                alt="GeoVision UAE Globe Logo"
-                className="w-full h-full object-contain pointer-events-none select-none drop-shadow-md"
-              />
-            </div>
-
-            {/* "Vision" text */}
-            <span className="geovision-title-vision shrink-0">
-              Vision
-            </span>
-          </div>
-
-          {/* Tagline Strip in vibrant blue color with white glow blur effect */}
-          <div className="flex items-center justify-center sm:justify-start rtl:sm:justify-start gap-1.5 sm:gap-3 w-full max-w-xl sm:max-w-2xl mt-2.5 sm:mt-3 mx-auto sm:mx-0">
-            <div
-              className="flex-1 h-[2px] rounded-full opacity-90 bg-gradient-to-r from-transparent via-[#012661] to-[#215A9E] dark:via-[#38BDF8] dark:to-[#60A5FA]"
-            />
-            <span className="shrink-0 text-[10px] xs:text-xs sm:text-xs md:text-sm font-black uppercase tracking-[0.14em] xs:tracking-[0.20em] sm:tracking-[0.28em] text-[#012661] dark:text-[#38BDF8] drop-shadow-[0_0_10px_rgba(255,255,255,0.95)]">
-              {language === 'ar' ? 'الذكاء المكاني لغدٍ أكثر ذكاءً' : 'SPATIAL INTELLIGENCE FOR A SMARTER TOMORROW'}
-            </span>
-            <div
-              className="flex-1 h-[2px] rounded-full opacity-90 bg-gradient-to-r from-[#215A9E] via-[#00B3C2] to-transparent dark:from-[#60A5FA] dark:via-[#38BDF8]"
-            />
-          </div>
-        </div>
-
-        {/* Small Elegant Sub-Headline */}
-        <h2 className="text-center sm:text-left rtl:sm:text-right text-sm xs:text-base sm:text-xl md:text-2xl lg:text-3xl font-extrabold text-[#063360] dark:text-white tracking-tight drop-shadow-sm mt-1 sm:mt-2 w-full">
-          {language === 'ar' ? (
-            <>
-              استكشف البيانات المكانية في <span className="text-[#215A9E] dark:text-[#38BDF8] font-black underline underline-offset-4 decoration-[#7DA1C4]">أبوظبي</span>
-            </>
-          ) : (
-            <>
-              Explore Public Data Across <span className="text-[#215A9E] dark:text-[#38BDF8] font-black underline underline-offset-4 decoration-[#7DA1C4]">Abu Dhabi</span>
-            </>
-          )}
-        </h2>
-
-        {/* Description Subtitle */}
-        <p className="text-center sm:text-left rtl:sm:text-right text-xs sm:text-sm text-[#545860] dark:text-slate-200 max-w-2xl font-semibold leading-relaxed drop-shadow-xs mx-auto sm:mx-0">
-          {language === 'ar'
-            ? 'ابحث عن أسئلة باللغة الطبيعية، واكتشف البيانات المكانية الموثوقة، واستكشف الخرائط التفاعلية في جميع أنحاء الإمارة.'
-            : 'Search natural language questions, discover authoritative public datasets, and explore interactive maps across the emirate.'}
-        </p>
-
-        {/* Main Glass AI Search Bar - Prominent & Centered */}
-        <div className="pt-1 sm:pt-0.5 w-full max-w-2xl sm:max-w-none mx-auto">
-          <AISearchBar hideThemes={true} />
-        </div>
-
-        {/* Try an example Section with Expandable Options */}
-        <div className="w-full space-y-1.5 pt-0.5 flex flex-col items-center sm:items-start rtl:sm:items-start">
-          <div className="flex items-center justify-center sm:justify-start rtl:sm:justify-start gap-2 text-xs font-bold text-[#063360] dark:text-slate-200">
-            <span className="flex items-center gap-1.5">
-              <span>{language === 'ar' ? 'جرب مثالاً:' : 'Try an example:'}</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100/80 dark:bg-blue-900/60 text-[#215A9E] dark:text-sky-300">
-                {examplesExpanded ? EXAMPLE_QUESTIONS.length : `3 of ${EXAMPLE_QUESTIONS.length}`}
-              </span>
-            </span>
-          </div>
-
-          <div className={`flex flex-wrap items-center justify-center sm:justify-start rtl:sm:justify-start gap-1.5 sm:gap-2 transition-all duration-300 ${
-            examplesExpanded ? 'max-h-48 sm:max-h-56 overflow-y-auto pr-1 py-0.5' : ''
-          }`}>
-            {displayedExamples.map((item) => {
-              const IconComp = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleExampleClick(item.queryEn, item.queryAr)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold bg-white/75 dark:bg-slate-900/80 text-[#063360] dark:text-slate-100 border border-sky-200/70 dark:border-slate-700/80 hover:border-[#215A9E] hover:bg-white dark:hover:bg-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer backdrop-blur-md animate-in fade-in zoom-in-95 duration-150"
+        {/* Top Block: GeoVision Brand Title & Hero Headline — Shifted 15px top */}
+        <div
+          className="w-full flex flex-col items-center -translate-y-[15px]"
+          style={{ transform: 'translateY(-15px)' }}
+        >
+          {/* GeoVision Brand Title - One Seamless Word with Precision-Aligned Morphing Map Pointer 'o' */}
+          <div className="inline-flex items-center justify-center select-none mb-3 sm:mb-4 md:mb-5">
+            <div className="flex items-baseline text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] font-black font-sans leading-none tracking-tight">
+              <span className="text-[#0A192F] dark:text-white drop-shadow-xs dark:drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]">Ge</span><span
+                className="inline-block relative shrink-0"
+                style={{
+                  width: '0.58em',
+                  height: '0.54em',
+                  marginLeft: '0.01em',
+                  marginRight: '-0.06em',
+                  transform: 'translateY(-0.01em)',
+                }}
+              >
+                <svg
+                  viewBox="0 0 100 100"
+                  className="absolute inset-0 w-full h-full overflow-visible drop-shadow-[0_0_12px_rgba(56,189,248,0.7)]"
+                  fill="none"
                 >
-                  <IconComp className="w-3.5 h-3.5 text-[#215A9E] dark:text-sky-400 shrink-0" />
-                  <span>{language === 'ar' ? item.textAr : item.textEn}</span>
-                </button>
-              );
-            })}
+                  <defs>
+                    <linearGradient id="geoPinGrad5" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#38BDF8" />
+                      <stop offset="40%" stopColor="#00E5FF" />
+                      <stop offset="100%" stopColor="#2563EB" />
+                    </linearGradient>
+                    <radialGradient id="geoPulseGrad5" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
+                      <stop offset="60%" stopColor="#00E5FF" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
+                    </radialGradient>
+                  </defs>
 
+                  {/* Radar Ground Wave beneath the pin tip */}
+                  <ellipse cx="50" cy="152" rx="2" ry="1" fill="url(#geoPulseGrad5)">
+                    <animate
+                      attributeName="rx"
+                      dur="4s"
+                      repeatCount="indefinite"
+                      keyTimes="0; 0.32; 0.48; 0.65; 0.75; 1"
+                      values="2; 2; 26; 30; 2; 2"
+                    />
+                    <animate
+                      attributeName="ry"
+                      dur="4s"
+                      repeatCount="indefinite"
+                      keyTimes="0; 0.32; 0.48; 0.65; 0.75; 1"
+                      values="1; 1; 6; 7; 1; 1"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      dur="4s"
+                      repeatCount="indefinite"
+                      keyTimes="0; 0.32; 0.44; 0.65; 0.75; 1"
+                      values="0; 0; 0.95; 0; 0; 0"
+                    />
+                  </ellipse>
+
+                  {/* Main Morphing Path: 'O' <---> 'Map Pointer' */}
+                  <path
+                    fill="url(#geoPinGrad5)"
+                    fillRule="evenodd"
+                    d="M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 76.51, 76.51 98, 50 98 C 23.49 98, 2 76.51, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z"
+                  >
+                    <animate
+                      attributeName="d"
+                      dur="4s"
+                      repeatCount="indefinite"
+                      keyTimes="0; 0.26; 0.48; 0.70; 0.88; 1"
+                      values="
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 76.51, 76.51 98, 50 98 C 23.49 98, 2 76.51, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z ;
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 76.51, 76.51 98, 50 98 C 23.49 98, 2 76.51, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z ;
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 88, 72 126, 50 150 C 28 126, 2 88, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z ;
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 88, 72 126, 50 150 C 28 126, 2 88, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z ;
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 76.51, 76.51 98, 50 98 C 23.49 98, 2 76.51, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z ;
+                        M 50 2 C 76.51 2, 98 23.49, 98 50 C 98 76.51, 76.51 98, 50 98 C 23.49 98, 2 76.51, 2 50 C 2 23.49, 23.49 2, 50 2 Z M 50 28 C 62.15 28, 72 37.85, 72 50 C 72 62.15, 62.15 72, 50 72 C 37.85 72, 28 62.15, 28 50 C 28 37.85, 37.85 28, 50 28 Z
+                      "
+                      calcMode="spline"
+                      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1"
+                    />
+                  </path>
+
+                  {/* Sparkling pin tip dot highlight */}
+                  <circle cx="50" cy="150" r="2.5" fill="#FFFFFF">
+                    <animate
+                      attributeName="opacity"
+                      dur="4s"
+                      repeatCount="indefinite"
+                      keyTimes="0; 0.40; 0.48; 0.68; 0.72; 1"
+                      values="0; 0; 1; 0.8; 0; 0"
+                    />
+                  </circle>
+                </svg>
+              </span><span className="text-[#0A192F] dark:text-white drop-shadow-xs dark:drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]">Vision</span>
+            </div>
+          </div>
+
+          {/* Hero Headline - Compact, Balanced, Single Consistent Font Color with Deliberate Pause Below */}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] font-extrabold text-[#0A192F] dark:text-white tracking-tight leading-tight select-none drop-shadow-xs dark:drop-shadow-md text-center max-w-3xl lg:max-w-4xl mx-auto mb-7 sm:mb-9 md:mb-10 lg:mb-11">
+            {isRtl ? (
+              <>
+                الذكاء المكاني لإمارة أبوظبي <br className="hidden sm:inline" /> بين يديك
+              </>
+            ) : (
+              <>
+                Abu Dhabi’s Geospatial Intelligence <br className="hidden sm:inline" /> at Your Fingertips
+              </>
+            )}
+          </h1>
+        </div>
+
+        {/* Primary Interaction: Prominent, Centered Frosted Search Bar + Immediate Example Chips — Vertically Centered */}
+        <div className="w-full max-w-2xl md:max-w-3xl lg:max-w-3xl xl:max-w-[48rem] mx-auto flex flex-col items-center">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="relative flex items-center w-full rounded-full bg-white dark:bg-slate-900/90 hover:dark:bg-slate-900/95 backdrop-blur-2xl border-2 border-slate-200/90 dark:border-white/20 hover:border-blue-400/90 dark:hover:border-sky-400/70 focus-within:border-blue-500 dark:focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-blue-500/15 dark:focus-within:ring-sky-400/25 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_14px_40px_-6px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.12)] transition-all duration-300 py-2 sm:py-2.5 px-3.5 sm:px-4.5 pl-4.5 sm:pl-6 rtl:pl-3.5 rtl:pr-4.5 rtl:sm:pr-6"
+          >
+            {/* Search Icon */}
+            <Search className="w-5 h-5 sm:w-6 sm:h-6 text-slate-500 dark:text-sky-400 shrink-0" />
+
+            {/* Search Input Field */}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                isRtl
+                  ? 'ابحث عن الأماكن أو الطبقات أو البيانات أو اطرح سؤالاً...'
+                  : 'Search places, layers, data or ask a question...'
+              }
+              className="w-full !bg-transparent dark:!bg-transparent border-0 !border-none outline-none !outline-none !shadow-none focus:!shadow-none focus:!ring-0 text-[#0A192F] dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-sm sm:text-base md:text-[17px] font-normal px-3 sm:px-4 py-2 sm:py-2.5 text-left rtl:text-right"
+              style={{ backgroundColor: 'transparent', boxShadow: 'none', border: 'none' }}
+            />
+
+            {/* Prominent Blue Circular Submit Button with Arrow */}
             <button
-              type="button"
-              onClick={() => setExamplesExpanded(prev => !prev)}
-              className="inline-flex items-center gap-1 px-3 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold text-[#215A9E] dark:text-sky-300 bg-sky-50/80 dark:bg-sky-950/60 border border-dashed border-sky-300 dark:border-sky-700 hover:bg-sky-100 dark:hover:bg-sky-900/80 shadow-2xs hover:shadow-sm transition-all duration-200 cursor-pointer"
+              type="submit"
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-geovision-blue hover:bg-geovision-blue-dark text-white flex items-center justify-center shrink-0 shadow-md sm:shadow-lg shadow-[#215A9E]/35 hover:shadow-[#215A9E]/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              aria-label={isRtl ? 'بحث' : 'Search'}
             >
-              {examplesExpanded ? (
-                <>
-                  <span>{language === 'ar' ? 'عرض أقل' : 'Show less'}</span>
-                  <ChevronUp className="w-3.5 h-3.5" />
-                </>
+              {isRtl ? (
+                <ArrowLeft className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={2.2} />
               ) : (
-                <>
-                  <span>{language === 'ar' ? `المزيد (${EXAMPLE_QUESTIONS.length - 3}+)...` : `More (${EXAMPLE_QUESTIONS.length - 3}+)...`}</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </>
+                <ArrowRight className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={2.2} />
               )}
             </button>
-          </div>
-        </div>
+          </form>
 
-        {/* Explore by theme Section — Hidden for now */}
-        {/*
-        <div className="w-full space-y-1 pt-0.5">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#063360] dark:text-slate-200">
-            <span>{language === 'ar' ? 'استكشاف حسب الموضوع:' : 'Explore by theme:'}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 transition-all duration-300">
-            {displayedThemes.map((item) => {
-              const IconComp = item.icon;
-              const label = language === 'ar' ? item.labelAr : item.labelEn;
-              return (
+          {/* Suggested Questions Chips Row - Fixed layout footprint so section placements never shift */}
+          <div className="relative w-full h-8 sm:h-9 mt-3.5 sm:mt-4">
+            <div className="absolute top-0 left-0 right-0 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 z-20">
+              {(showAllExamples ? SUGGESTED_QUESTIONS : SUGGESTED_QUESTIONS.slice(0, 3)).map((pill) => (
                 <button
-                  key={item.id}
-                  onClick={() => handleThemeQueryClick(item.queryEn, item.queryAr)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold bg-white/75 dark:bg-slate-900/80 text-[#063360] dark:text-slate-100 border border-sky-200/70 dark:border-slate-700/80 hover:border-[#215A9E] hover:bg-[#215A9E] hover:text-white dark:hover:bg-[#215A9E] dark:hover:text-white shadow-2xs transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer backdrop-blur-md group animate-in fade-in zoom-in-95 duration-150"
+                  key={pill.id}
+                  type="button"
+                  onClick={() => handlePillClick(pill.queryEn, pill.queryAr)}
+                  className="px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-slate-800 hover:text-blue-700 dark:text-white/95 dark:hover:text-white bg-white/95 hover:bg-white dark:bg-slate-900/75 dark:hover:bg-slate-800/90 backdrop-blur-md border border-slate-300/80 hover:border-blue-400 dark:border-white/20 dark:hover:border-sky-400/80 transition-all shadow-xs hover:shadow-md cursor-pointer hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
                 >
-                  <IconComp className="w-3.5 h-3.5 text-[#215A9E] group-hover:text-white shrink-0 transition-colors" />
-                  <span>{label}</span>
+                  {isRtl ? pill.labelAr : pill.labelEn}
                 </button>
-              );
-            })}
+              ))}
 
-            <button
-              type="button"
-              onClick={() => setShowAllThemes(prev => !prev)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-extrabold shadow-2xs transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer backdrop-blur-md ${
-                showAllThemes
-                  ? 'bg-[#215A9E] text-white border border-[#215A9E]'
-                  : 'bg-white/75 dark:bg-slate-900/80 text-[#063360] dark:text-slate-100 border border-sky-200/70 dark:border-slate-700/80 hover:border-[#215A9E] hover:bg-[#215A9E] hover:text-white'
-              }`}
-            >
-              {showAllThemes ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5 shrink-0" />
-                  <span>{language === 'ar' ? 'عرض أقل' : 'Show less'}</span>
-                </>
-              ) : (
-                <>
-                  <LayoutGrid className="w-3.5 h-3.5 text-[#215A9E] group-hover:text-white shrink-0 transition-colors" />
-                  <span>{language === 'ar' ? 'جميع الموضوعات' : 'All themes'}</span>
-                </>
+              {SUGGESTED_QUESTIONS.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllExamples((prev) => !prev)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold text-blue-600 dark:text-sky-300 hover:text-blue-700 dark:hover:text-white bg-blue-50/90 hover:bg-blue-100/90 dark:bg-sky-950/70 dark:hover:bg-sky-900/90 backdrop-blur-md border border-blue-200/90 dark:border-sky-500/30 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
+                  aria-expanded={showAllExamples}
+                >
+                  <span>
+                    {showAllExamples
+                      ? (isRtl ? 'عرض أقل' : 'Less')
+                      : (isRtl ? 'المزيد +' : 'More +')}
+                  </span>
+                </button>
               )}
-            </button>
+            </div>
           </div>
         </div>
-        */}
 
-        {/* 3 Main Quick-Launch Cards Row (Compact 3-column launcher on mobile to save vertical space, full cards on desktop) */}
-        <div className="w-full grid grid-cols-3 gap-2 sm:gap-4 pt-1 sm:pt-1.5">
-          
-          {/* Card 1: Ask GeoVision */}
-          <div
-            onClick={() => {
-              const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-              input?.focus();
-            }}
-            className="relative glass-panel rounded-xl sm:rounded-3xl p-2 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left rtl:sm:text-right min-h-[58px] sm:min-h-[92px] bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/70 dark:border-white/10 shadow-xs hover:shadow-md cursor-pointer select-none transition-all active:scale-[0.98]"
-          >
-            <div className="relative z-10 flex flex-col sm:flex-row items-center gap-1 sm:gap-3.5 w-full">
-              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#1E6ADB] via-[#215A9E] to-[#0A3B73] text-white flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0">
-                <Sparkles className="w-3.5 h-3.5 sm:w-6 sm:h-6 text-white" />
+        {/* 3 Modern Glass Quick-Launch Cards — Shifted 15px down */}
+        <div
+          className="relative z-10 w-full grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 mt-9 sm:mt-11 md:mt-13 lg:mt-14 translate-y-[15px]"
+          style={{ transform: 'translateY(15px)' }}
+        >
+        {BOTTOM_CARDS.map((card) => {
+          const IconComp = card.icon;
+          return (
+            <div
+              key={card.id}
+              onClick={card.action}
+              className="relative group bg-white/85 hover:bg-white/95 dark:bg-slate-900/55 dark:hover:bg-slate-900/70 backdrop-blur-2xl border border-slate-200/90 hover:border-sky-400/80 dark:border-white/25 dark:hover:border-sky-400/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] hover:shadow-[0_12px_36px_0_rgba(56,189,248,0.15)] dark:hover:shadow-[0_12px_36px_0_rgba(56,189,248,0.2)] rounded-2xl p-3 sm:p-3.5 lg:p-4 flex items-center gap-3 sm:gap-3.5 text-left rtl:text-right cursor-pointer select-none transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
+            >
+              {/* Modern Ambient Icon Container - Clear and crisp in both light and dark mode */}
+              <div
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl ${card.iconContainerLight} ${card.iconContainerDark} flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:text-blue-700 dark:group-hover:text-white transition-all duration-300 shrink-0`}
+              >
+                <IconComp className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.2} />
               </div>
-              <div className="space-y-0.5 flex-1 min-w-0">
-                <h3 className="text-[11px] xs:text-xs sm:text-base font-extrabold text-[#063360] dark:text-white leading-tight">
-                  {language === 'ar' ? 'اسأل GeoVision' : 'Ask GeoVision'}
+
+              {/* Text Column - Left aligned */}
+              <div className="min-w-0 flex-1 text-left rtl:text-right">
+                <h3 className="text-sm sm:text-base font-bold text-[#0A192F] group-hover:text-blue-600 dark:text-white dark:group-hover:text-sky-300 transition-colors leading-snug drop-shadow-xs dark:drop-shadow-sm">
+                  {isRtl ? card.titleAr : card.titleEn}
                 </h3>
-                <p className="hidden md:block text-[11px] sm:text-xs font-semibold text-[#545860] dark:text-slate-300 leading-snug">
-                  {language === 'ar'
-                    ? 'احصل على إجابات فورية للأماكن والخدمات والبيانات المكانية.'
-                    : 'Get instant answers about places, services and spatial data.'}
+                <p className="text-[11px] sm:text-xs text-slate-600 group-hover:text-slate-800 dark:text-white/75 dark:group-hover:text-white/95 font-medium leading-relaxed mt-0.5 line-clamp-2 transition-colors">
+                  {isRtl ? card.descAr : card.descEn}
                 </p>
               </div>
             </div>
-          </div>
+          );
+        })}
+      </div>
 
-          {/* Card 2: Explore Map */}
-          <div
-            onClick={() => setCurrentView('map')}
-            className="relative glass-panel rounded-xl sm:rounded-3xl p-2 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left rtl:sm:text-right min-h-[58px] sm:min-h-[92px] bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/70 dark:border-white/10 shadow-xs hover:shadow-md cursor-pointer select-none transition-all active:scale-[0.98]"
-          >
-            <div className="relative z-10 flex flex-col sm:flex-row items-center gap-1 sm:gap-3.5 w-full">
-              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#1E6ADB] via-[#215A9E] to-[#0A3B73] text-white flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0">
-                <Map className="w-3.5 h-3.5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <div className="space-y-0.5 flex-1 min-w-0">
-                <h3 className="text-[11px] xs:text-xs sm:text-base font-extrabold text-[#063360] dark:text-white leading-tight">
-                  {language === 'ar' ? 'استكشاف الخريطة' : 'Explore Map'}
-                </h3>
-                <p className="hidden md:block text-[11px] sm:text-xs font-semibold text-[#545860] dark:text-slate-300 leading-snug">
-                  {language === 'ar'
-                    ? 'تصفح وابحث وحلل البيانات في كافة أنحاء أبوظبي.'
-                    : 'Browse, search and analyse data across Abu Dhabi.'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Discover Data */}
-          <div
-            onClick={() => setCurrentView('categories')}
-            className="relative glass-panel rounded-xl sm:rounded-3xl p-2 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left rtl:sm:text-right min-h-[58px] sm:min-h-[92px] bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/70 dark:border-white/10 shadow-xs hover:shadow-md cursor-pointer select-none transition-all active:scale-[0.98]"
-          >
-            <div className="relative z-10 flex flex-col sm:flex-row items-center gap-1 sm:gap-3.5 w-full">
-              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#1E6ADB] via-[#215A9E] to-[#0A3B73] text-white flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0">
-                <Layers className="w-3.5 h-3.5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <div className="space-y-0.5 flex-1 min-w-0">
-                <h3 className="text-[11px] xs:text-xs sm:text-base font-extrabold text-[#063360] dark:text-white leading-tight">
-                  {language === 'ar' ? 'اكتشاف البيانات' : 'Discover Data'}
-                </h3>
-                <p className="hidden md:block text-[11px] sm:text-xs font-semibold text-[#545860] dark:text-slate-300 leading-snug">
-                  {language === 'ar'
-                    ? 'ابحث واستكشف المجموعات الموثوقة للبيانات العامة.'
-                    : 'Find and explore authoritative public datasets.'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-        </div>
 
       </div>
 

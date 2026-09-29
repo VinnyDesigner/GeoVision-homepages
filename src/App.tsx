@@ -2,9 +2,6 @@ import React from 'react';
 import { AppStateProvider, useAppState } from './context/AppStateContext';
 import { AppHeader } from './components/layout/AppHeader';
 import { LandingPage } from './components/pages/LandingPage';
-import { LandingPage2 } from './components/pages/LandingPage2';
-import { LandingPage3 } from './components/pages/LandingPage3';
-import { LandingPage4 } from './components/pages/LandingPage4';
 import { MapWorkspace } from './components/map/MapWorkspace';
 import { CategoryExplorer } from './components/categories/CategoryExplorer';
 import { AboutUsPage } from './components/pages/AboutUsPage';
@@ -23,14 +20,22 @@ const MainAppShell: React.FC = () => {
   const { currentView, pureMapMode } = useAppState();
   const isPureMap = currentView === 'map' && pureMapMode;
 
+  React.useEffect(() => {
+    if (currentView === 'home') {
+      document.documentElement.classList.add('view-home');
+    } else {
+      document.documentElement.classList.remove('view-home');
+    }
+    return () => {
+      document.documentElement.classList.remove('view-home');
+    };
+  }, [currentView]);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className={`w-full ${currentView === 'home' ? 'h-full overflow-hidden view-home' : 'min-h-screen'} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
       {!isPureMap && <AppHeader />}
-      <main className={isPureMap || currentView === 'home' || currentView === 'home2' || currentView === 'home3' || currentView === 'home4' ? 'w-full h-screen overflow-hidden' : 'w-full min-h-[calc(100vh-4rem)]'}>
+      <main className={currentView === 'home' ? 'w-full h-full overflow-hidden' : (isPureMap || currentView === 'map' ? 'w-full h-screen overflow-hidden' : 'w-full min-h-[calc(100vh-4rem)]')}>
         {currentView === 'home' && <LandingPage />}
-        {currentView === 'home2' && <LandingPage2 />}
-        {currentView === 'home3' && <LandingPage3 />}
-        {currentView === 'home4' && <LandingPage4 />}
         {currentView === 'map' && <MapWorkspace />}
         {currentView === 'categories' && <CategoryExplorer />}
         {currentView === 'about' && <AboutUsPage />}

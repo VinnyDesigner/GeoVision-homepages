@@ -37,6 +37,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { AIMessageSearchResults } from './AIMessageSearchResults';
+import { FormattedMessageText } from './FormattedMessageText';
+import { GeoVisionBrand, AnimatedMapPointer } from '../common/GeoVisionBrandTitle';
 import { buildSpatialSnapshot } from '../../utils/spatialSnapshotUtils';
 import type { AttachedSpatialSnapshot } from '../../types';
 
@@ -503,7 +505,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200/90 dark:border-slate-800 shadow-2xl relative z-[700] overflow-hidden group">
+    <div className="w-full h-full flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200/90 dark:border-slate-800 shadow-2xl relative z-[700] overflow-hidden group font-chat">
       
       {/* Left Edge Drag Resizer Handle */}
       {onStartResize && (
@@ -521,21 +523,19 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
       )}
 
       {/* Header Bar */}
-      <div className="p-3.5 sm:p-4 border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex items-center justify-between gap-2 shrink-0 z-20">
+      <div className="p-3 sm:p-3.5 border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex items-center justify-between gap-2 shrink-0 z-20">
         <div className="flex items-center gap-2.5 min-w-0">
           <img
-            src={getAssetUrl('globe-logo.png')}
+            src={getAssetUrl('chat-globe-logo.png')}
             alt="GeoVision Globe Logo"
-            className="w-8 h-8 object-contain shrink-0 drop-shadow-xs"
+            className="w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain shrink-0 drop-shadow-xs"
           />
-          <div className="min-w-0">
-            <h2 className="text-sm font-black text-slate-900 dark:text-white truncate">
-              Smart Maps AI Assistant
-            </h2>
+          <div className="min-w-0 flex items-center">
+            <GeoVisionBrand size="sm" idPrefix="panelHeader" />
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => {
               if (user?.isGuest) {
@@ -544,7 +544,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
                 setCurrentView('favorites');
               }
             }}
-            className="p-1.5 sm:p-2 text-[#545860] hover:text-[#063360] dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-[#7DA1C4]/15 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="p-1.5 text-slate-500 hover:text-[#063360] dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             title={t('nav.favorites')}
           >
             <Bookmark className="w-4 h-4 text-geovision-blue dark:text-sky-400 fill-geovision-blue/20 dark:fill-sky-400/20" />
@@ -558,7 +558,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
                 setCurrentView('history');
               }
             }}
-            className="p-1.5 sm:p-2 text-[#545860] hover:text-[#063360] dark:text-slate-300 dark:hover:text-white rounded-xl hover:bg-[#7DA1C4]/15 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="p-1.5 text-slate-500 hover:text-[#063360] dark:text-slate-300 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             title={t('nav.history')}
           >
             <History className="w-4 h-4 text-[#215A9E] dark:text-sky-300" />
@@ -566,17 +566,17 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
 
           <button
             onClick={handleNewChat}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#215A9E] dark:bg-sky-600 text-white hover:bg-[#063360] dark:hover:bg-sky-500 font-extrabold text-xs shadow-md shadow-[#215A9E]/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#215A9E] dark:bg-sky-600 text-white hover:bg-[#063360] dark:hover:bg-sky-500 font-semibold text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
             title={language === 'ar' ? 'محادثة جديدة' : 'New Chat'}
           >
             <Plus className="w-3.5 h-3.5 shrink-0 text-white" />
-            <span className="whitespace-nowrap text-white">{language === 'ar' ? 'محادثة جديدة' : 'New Chat'}</span>
+            <span className="whitespace-nowrap text-white">{language === 'ar' ? 'جديد' : 'New Chat'}</span>
           </button>
 
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Close AI Assistant"
             >
               <X className="w-4 h-4" />
@@ -1028,7 +1028,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
                       </div>
                     )}
 
-                    <div className="w-full p-3.5 rounded-2xl bg-geovision-blue text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/20 rounded-tr-none break-words">
+                    <div className="w-full p-3 sm:p-3.5 rounded-2xl bg-geovision-blue text-white text-[13px] sm:text-[13.5px] font-medium shadow-md shadow-blue-500/20 rounded-tr-none break-words leading-relaxed">
                       {textToDisplay}
                     </div>
                   </div>
@@ -1044,21 +1044,23 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
               className="flex flex-col items-start scroll-mt-3"
             >
               {/* Sender Badge */}
-              <div className="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-slate-400">
-                <img
-                  src={getAssetUrl('globe-logo.png')}
-                  alt="GeoVision AI"
-                  className="w-4 h-4 object-contain shrink-0"
-                />
+              <div className="flex items-center gap-1.5 mb-1.5 pl-0.5 rtl:pl-0 rtl:pr-0.5">
+                <div className="w-3.5 h-3.5 shrink-0 flex items-center justify-center">
+                  <AnimatedMapPointer idPrefix={`msg-badge-${msg.id}`} />
+                </div>
+                <span className="font-semibold text-[11px] text-slate-500 dark:text-slate-400">
+                  GeoVision Spatial AI
+                </span>
               </div>
 
               {/* AI Response Bubble */}
-              <div className="max-w-[95%] sm:max-w-[90%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm font-semibold leading-relaxed shadow-sm bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 rounded-tl-none border border-slate-200/80 dark:border-slate-800 space-y-3 break-words">
+              <div className="max-w-[95%] sm:max-w-[92%] p-3.5 sm:p-4 rounded-2xl shadow-xs bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 rounded-tl-none border border-slate-200/80 dark:border-slate-800 space-y-3 break-words">
                 
-                {/* Main Text Response */}
-                <div className="whitespace-pre-line leading-relaxed text-slate-800 dark:text-slate-100 font-bold break-words">
-                  {isMsgAr ? (msg.textAr || msg.textEn) : (msg.textEn || msg.textAr)}
-                </div>
+                {/* Main Text Response — Structured Formatted Typography */}
+                <FormattedMessageText
+                  content={isMsgAr ? (msg.textAr || msg.textEn) : (msg.textEn || msg.textAr)}
+                  isArabic={isMsgAr}
+                />
 
                 {/* Result Cards Display */}
                 {msg.matchedFeatures && msg.matchedFeatures.length > 0 && (
@@ -1071,21 +1073,21 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
 
                 {/* Recommendations Section */}
                 {!msg.noResultsSuggestions && !msg.disambiguationOptions && ((isMsgAr ? msg.recommendationsAr : msg.recommendationsEn) || []).length > 0 && (
-                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-3">
-                    <p className="text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-geovision-blue dark:text-sky-300" />
-                      {t('ai.recommendationsTitle')}
+                  <div className="space-y-2.5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 mt-3">
+                    <p className="text-[12.5px] sm:text-[13px] font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-geovision-blue dark:text-sky-400 shrink-0" />
+                      <span>{t('ai.recommendationsTitle')}</span>
                     </p>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2 sm:space-y-2.5">
                       {(isMsgAr ? msg.recommendationsAr : msg.recommendationsEn)?.map((recText, idx) => (
                         <button
                           key={idx}
                           onClick={() => sendAIMessage(recText)}
-                          className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-blue-50/90 hover:bg-blue-100 dark:bg-slate-800/90 dark:hover:bg-slate-700 text-[#063360] dark:text-sky-200 font-extrabold border border-blue-200/80 dark:border-slate-700 hover:border-geovision-blue dark:hover:border-sky-300 text-xs text-left rtl:text-right transition-all cursor-pointer shadow-2xs gap-2 min-w-0 group"
+                          className="w-full flex items-center justify-between p-3 px-3.5 rounded-xl bg-slate-50/80 hover:bg-blue-50/80 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-800 hover:text-geovision-blue dark:text-slate-100 dark:hover:text-white font-medium border border-slate-200/90 hover:border-blue-300 dark:border-slate-700/80 dark:hover:border-slate-600 text-[12.5px] sm:text-[13px] text-left rtl:text-right transition-all cursor-pointer shadow-2xs hover:shadow-xs gap-2.5 min-w-0 group"
                         >
-                          <span className="truncate flex-1 text-slate-800 dark:text-sky-200 font-extrabold">{recText}</span>
-                          <ChevronRight className="w-4 h-4 shrink-0 text-[#215A9E] dark:text-sky-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all" />
+                          <span className="flex-1 text-slate-800 group-hover:text-geovision-blue dark:text-slate-100 dark:group-hover:text-white font-medium leading-snug">{recText}</span>
+                          <ChevronRight className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-geovision-blue dark:text-slate-500 dark:group-hover:text-sky-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all" />
                         </button>
                       ))}
                     </div>
@@ -1152,7 +1154,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
             placeholder={isListening ? (language === 'ar' ? 'جاري الاستماع لصوتك...' : 'Listening to your voice...') : t('ai.inputPlaceholder')}
-            className={`w-full pl-3.5 pr-28 py-2.5 sm:py-3 rtl:pr-3.5 rtl:pl-28 rounded-2xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-geovision-blue transition-all ${
+            className={`w-full pl-3.5 pr-28 py-2.5 sm:py-3 rtl:pr-3.5 rtl:pl-28 rounded-2xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-[13.5px] font-normal placeholder:font-normal placeholder:text-slate-400 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-geovision-blue/40 transition-all ${
               isListening ? 'border-rose-500 bg-rose-50/30 dark:bg-rose-950/20' : 'border-slate-200 dark:border-slate-700'
             }`}
           />

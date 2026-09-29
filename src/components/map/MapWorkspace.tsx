@@ -1144,7 +1144,7 @@ export const MapWorkspace: React.FC = () => {
   }, []);
 
   return (
-    <div className={`relative w-full overflow-hidden flex flex-col md:flex-row bg-spatial-canvas ${pureMapMode ? 'h-screen pt-0' : 'h-screen pt-[84px] sm:pt-[88px]'}`}>
+    <div className="relative w-full h-screen overflow-hidden flex flex-col md:flex-row bg-spatial-canvas">
 
       {/* Main Visual Canvas Map */}
       <div className="relative flex-1 min-w-0 h-full w-full overflow-hidden">
@@ -1162,7 +1162,7 @@ export const MapWorkspace: React.FC = () => {
 
         {/* Floating Data & Filter Drawer */}
         {!pureMapMode && filterDrawerOpen && (
-          <div className="absolute top-16 sm:top-6 left-3 sm:left-[80px] z-[600] w-[calc(100%-24px)] sm:w-72 max-w-xs h-[408px] max-h-[calc(100vh-160px)] glass-level-3 rounded-3xl p-3 sm:p-3.5 shadow-2xl border border-white/80 dark:border-slate-800 animate-slide-in flex flex-col overflow-hidden pointer-events-auto">
+          <div className="absolute top-[76px] sm:top-[86px] left-3 sm:left-[80px] z-[600] w-[calc(100%-24px)] sm:w-72 max-w-xs h-[408px] max-h-[calc(100vh-100px)] glass-level-3 rounded-3xl p-3 sm:p-3.5 shadow-2xl border border-white/80 dark:border-slate-800 animate-slide-in flex flex-col overflow-hidden pointer-events-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2 shrink-0">
               <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-geovision-blue" />
@@ -1259,7 +1259,7 @@ export const MapWorkspace: React.FC = () => {
           }}
           className={`transition-all ${isResizing ? 'duration-0 select-none' : 'duration-300'} ${
             aiPanelOpen
-              ? 'fixed md:relative inset-x-0 bottom-0 top-auto z-[700] md:z-20 h-[65vh] max-h-[500px] md:max-h-none md:h-full rounded-t-3xl md:rounded-none shadow-2xl border-t md:border-t-0 border-slate-200 dark:border-slate-800'
+              ? 'fixed md:relative inset-x-0 bottom-0 top-auto z-[700] md:z-20 h-[65vh] max-h-[500px] md:max-h-none md:h-full rounded-t-3xl md:rounded-none shadow-2xl border-t md:border-t-0 border-slate-200 dark:border-slate-800 pt-[74px] sm:pt-[82px]'
               : 'w-0 h-0 overflow-hidden hidden'
           } shrink-0`}
         >

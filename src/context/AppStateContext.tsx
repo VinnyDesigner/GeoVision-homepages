@@ -23,7 +23,7 @@ import type {
 import { TRANSLATIONS } from '../data/translations';
 import { GEO_FEATURES } from '../data/mockAbuDhabiData';
 
-export type AppView = 'home' | 'home2' | 'home3' | 'home4' | 'map' | 'categories' | 'about' | 'help' | 'favorites' | 'history' | 'profile';
+export type AppView = 'home' | 'map' | 'categories' | 'about' | 'help' | 'favorites' | 'history' | 'profile';
 
 interface AppStateContextType {
 
@@ -141,16 +141,20 @@ const getNormalizedPathView = (): AppView | null => {
     .replace(/(\/index)?\.html$/, '')
     .replace(/\/index$/, '')
     .toLowerCase();
-  if (cleanPath === 'home2' || cleanPath.endsWith('/home2')) return 'home2';
-  if (cleanPath === 'home3' || cleanPath.endsWith('/home3')) return 'home3';
-  if (cleanPath === 'home4' || cleanPath.endsWith('/home4')) return 'home4';
+  if (cleanPath === 'home' || cleanPath.endsWith('/home') ||
+      cleanPath === 'home2' || cleanPath.endsWith('/home2') ||
+      cleanPath === 'home3' || cleanPath.endsWith('/home3') ||
+      cleanPath === 'home4' || cleanPath.endsWith('/home4') ||
+      cleanPath === 'home5' || cleanPath.endsWith('/home5')) {
+    return 'home';
+  }
   return null;
 };
 
 const getAppBasePath = (): string => {
   if (typeof window === 'undefined') return '';
   return window.location.pathname
-    .replace(/\/home[234](\.html|\/index\.html|\/)?$/, '')
+    .replace(/\/home[2345]?(\.html|\/index\.html|\/)?$/, '')
     .replace(/\/index\.html$/, '')
     .replace(/\/+$/, '');
 };
@@ -160,22 +164,15 @@ const AppStateContext = createContext<AppStateContextType | undefined>(undefined
 export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('en');
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const pathView = getNormalizedPathView();
-      const hash = window.location.hash.replace('#', '').replace(/^\//, '').toLowerCase();
-      if (pathView === 'home2' || hash === 'home2' || pathView === 'home3' || hash === 'home3' || pathView === 'home4' || hash === 'home4') {
-        const now = new Date();
-        const mins = now.getHours() * 60 + now.getMinutes();
-        return (mins >= 6 * 60 && mins < 18 * 60) ? 'light' : 'dark';
-      }
-    }
     try {
       const saved = localStorage.getItem('geovision_theme');
       if (saved === 'dark' || saved === 'light') return saved;
     } catch (e) {
       console.error(e);
     }
-    return 'light';
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    return (mins >= 6 * 60 && mins < 18 * 60) ? 'light' : 'dark';
   });
   const [currentView, setCurrentViewInternal] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
@@ -184,9 +181,12 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
         return pathView;
       }
       if (window.location.hash) {
-        const hashView = window.location.hash.replace('#', '').replace(/^\//, '').toLowerCase() as AppView;
-        if (['home', 'home2', 'home3', 'home4', 'map', 'categories', 'about', 'help', 'favorites', 'history', 'profile'].includes(hashView)) {
-          return hashView;
+        const hashView = window.location.hash.replace('#', '').replace(/^\//, '').toLowerCase();
+        if (['home2', 'home3', 'home4', 'home5'].includes(hashView)) {
+          return 'home';
+        }
+        if (['home', 'map', 'categories', 'about', 'help', 'favorites', 'history', 'profile'].includes(hashView)) {
+          return hashView as AppView;
         }
       }
     }
@@ -196,23 +196,15 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const setCurrentView = (view: AppView) => {
     setCurrentViewInternal(view);
     try {
-      const isCustomHomePath = !!getNormalizedPathView();
       const basePath = getAppBasePath();
-      if (view === 'home2' || view === 'home3' || view === 'home4') {
-        const targetPath = `${basePath}/${view}/`;
-        if (window.location.pathname !== targetPath && window.location.pathname !== `${basePath}/${view}`) {
-          window.history.pushState({ view }, '', targetPath);
-        }
-      } else if (view === 'home') {
-        if (isCustomHomePath) {
-          window.history.pushState({ view }, '', `${basePath || ''}/`);
+      if (view === 'home') {
+        if (window.location.pathname.includes('/home')) {
+          window.history.pushState({ view }, '', `${basePath || ''}/#home`);
         } else if (window.location.hash !== '#home' && window.location.hash !== '') {
           window.history.pushState({ view }, '', '#home');
         }
       } else {
-        if (isCustomHomePath) {
-          window.history.pushState({ view }, '', `${basePath || ''}/#${view}`);
-        } else if (window.location.hash !== `#${view}`) {
+        if (window.location.hash !== `#${view}`) {
           window.history.pushState({ view }, '', `#${view}`);
         }
       }
@@ -228,9 +220,11 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
       } else if (event.state && event.state.view) {
         targetView = event.state.view as AppView;
       } else if (window.location.hash) {
-        const hashView = window.location.hash.replace('#', '').replace(/^\//, '').toLowerCase() as AppView;
-        if (['home', 'home2', 'home3', 'home4', 'map', 'categories', 'about', 'help', 'favorites', 'history', 'profile'].includes(hashView)) {
-          targetView = hashView;
+        const hashView = window.location.hash.replace('#', '').replace(/^\//, '').toLowerCase();
+        if (['home2', 'home3', 'home4', 'home5'].includes(hashView)) {
+          targetView = 'home';
+        } else if (['home', 'map', 'categories', 'about', 'help', 'favorites', 'history', 'profile'].includes(hashView)) {
+          targetView = hashView as AppView;
         }
       }
       setCurrentViewInternal(targetView);
@@ -349,8 +343,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const INITIAL_WELCOME_MESSAGE: AIMessage = {
     id: 'msg-welcome',
     sender: 'ai',
-    textEn: 'Hello! I am GeoVision, your AI spatial assistant for Abu Dhabi. Ask me anything about location services, healthcare, schools, or spatial planning.',
-    textAr: 'مرحباً بك! أنا مساعد GeoVision الذكي للخرائط في أبوظبي. اسألني عن الخدمات والمستشفيات والمدارس والتحليل المكاني.',
+    textEn: 'Hello! I am **GeoVision**, your AI spatial intelligence assistant for Abu Dhabi.\n\nAsk me anything about location services, healthcare, schools, or spatial planning.',
+    textAr: 'مرحباً بك! أنا **GeoVision**، مساعدك الذكي للبيانات والتحليلات المكانية في أبوظبي.\n\nاسألني عن الخدمات والمستشفيات والمدارس والتحليل المكاني.',
     timestamp: 'Just now',
     recommendationsEn: [
       'Show hospitals within 5 km of my location',
@@ -501,8 +495,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setAiMessages([{
       id: `msg-welcome-${Date.now()}`,
       sender: 'ai',
-      textEn: 'Hello! I am GeoVision, your AI spatial assistant for Abu Dhabi. Ask me anything about location services, healthcare, schools, or spatial planning.',
-      textAr: 'مرحباً بك! أنا مساعد GeoVision الذكي للخرائط في أبوظبي. اسألني عن الخدمات والمستشفيات والمدارس والتحليل المكاني.',
+      textEn: 'Hello! I am **GeoVision**, your AI spatial intelligence assistant for Abu Dhabi.\n\nAsk me anything about location services, healthcare, schools, or spatial planning.',
+      textAr: 'مرحباً بك! أنا **GeoVision**، مساعدك الذكي للبيانات والتحليلات المكانية في أبوظبي.\n\nاسألني عن الخدمات والمستشفيات والمدارس والتحليل المكاني.',
       timestamp: 'Just now',
       recommendationsEn: [
         'Show hospitals within 5 km of my location',
@@ -613,25 +607,11 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
       document.body.classList.remove('dark');
     }
     try {
-      if (currentView !== 'home2' && currentView !== 'home3' && currentView !== 'home4') {
-        localStorage.setItem('geovision_theme', theme);
-      }
+      localStorage.setItem('geovision_theme', theme);
     } catch (e) {
       console.error(e);
     }
-  }, [theme, currentView]);
-
-  // Restore user's saved global theme preference when navigating away from home2, home3 or home4
-  useEffect(() => {
-    if (currentView !== 'home2' && currentView !== 'home3' && currentView !== 'home4') {
-      try {
-        const saved = localStorage.getItem('geovision_theme') as Theme | null;
-        if (saved && (saved === 'dark' || saved === 'light') && saved !== theme) {
-          setTheme(saved);
-        }
-      } catch (e) {}
-    }
-  }, [currentView]);
+  }, [theme]);
 
   // RTL direction side effect
   useEffect(() => {

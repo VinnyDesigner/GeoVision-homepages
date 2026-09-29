@@ -197,7 +197,7 @@ export const SketchAOITool: React.FC = () => {
   };
 
   return (
-    <div className="absolute top-4 sm:top-6 left-16 sm:left-20 rtl:left-auto rtl:right-16 sm:rtl:right-20 z-[600] w-80 sm:w-[370px] max-h-[calc(100vh-140px)] glass-level-3 rounded-3xl p-4 sm:p-5 shadow-2xl border border-white/80 dark:border-slate-800 animate-fade-in flex flex-col overflow-hidden glow-blue pointer-events-auto">
+    <div className="absolute top-[76px] sm:top-[86px] left-16 sm:left-20 rtl:left-auto rtl:right-16 sm:rtl:right-20 z-[600] w-80 sm:w-[370px] max-h-[calc(100vh-100px)] glass-level-3 rounded-3xl p-4 sm:p-5 shadow-2xl border border-white/80 dark:border-slate-800 animate-fade-in flex flex-col overflow-hidden glow-blue pointer-events-auto">
       
       {/* Header (Fixed) */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 mb-3 shrink-0">
