@@ -26,15 +26,23 @@ const MainAppShell: React.FC = () => {
     } else {
       document.documentElement.classList.remove('view-home');
     }
+
+    if (currentView === 'map') {
+      document.documentElement.classList.add('view-map');
+    } else {
+      document.documentElement.classList.remove('view-map');
+    }
+
     return () => {
       document.documentElement.classList.remove('view-home');
+      document.documentElement.classList.remove('view-map');
     };
   }, [currentView]);
 
   return (
-    <div className={`w-full ${currentView === 'home' ? 'h-full overflow-hidden view-home' : 'min-h-screen'} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
+    <div className={`w-full ${currentView === 'home' || currentView === 'map' ? 'h-full overflow-hidden' : 'min-h-screen'} ${currentView === 'home' ? 'view-home' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
       {!isPureMap && <AppHeader />}
-      <main className={currentView === 'home' ? 'w-full h-full overflow-hidden' : (isPureMap || currentView === 'map' ? 'w-full h-screen overflow-hidden' : 'w-full min-h-[calc(100vh-4rem)]')}>
+      <main className={currentView === 'home' || currentView === 'map' || isPureMap ? 'w-full h-full overflow-hidden' : 'w-full min-h-[calc(100vh-4rem)]'}>
         {currentView === 'home' && <LandingPage />}
         {currentView === 'map' && <MapWorkspace />}
         {currentView === 'categories' && <CategoryExplorer />}

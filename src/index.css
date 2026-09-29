@@ -840,11 +840,13 @@ html {
    as they do on standard desktop (1920x1080), with ZERO vertical/horizontal scrolling.
    ========================================================================== */
 
-/* Strict viewport and overflow lock for Home across all display sizes */
+/* Strict viewport and overflow lock for Home & Map Viewer across all display sizes */
 html.view-home,
 html.view-home5,
+html.view-map,
 html.view-home body,
-html.view-home5 body {
+html.view-home5 body,
+html.view-map body {
   height: 100% !important;
   max-height: 100% !important;
   min-height: 100% !important;
@@ -857,10 +859,13 @@ html.view-home5 body {
 
 html.view-home #root,
 html.view-home5 #root,
+html.view-map #root,
 html.view-home .view-home,
 html.view-home5 .view-home5,
 html.view-home main,
 html.view-home5 main,
+html.view-map main,
+html.view-map .bg-spatial-canvas,
 html.view-home .home-viewport,
 html.view-home5 .home-viewport,
 html.view-home .home5-viewport,

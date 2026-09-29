@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { AIMessageSearchResults } from './AIMessageSearchResults';
 import { FormattedMessageText } from './FormattedMessageText';
-import { GeoVisionBrand, AnimatedMapPointer } from '../common/GeoVisionBrandTitle';
+import { AnimatedMapPointer } from '../common/GeoVisionBrandTitle';
 import { buildSpatialSnapshot } from '../../utils/spatialSnapshotUtils';
 import type { AttachedSpatialSnapshot } from '../../types';
 
@@ -531,7 +531,9 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
             className="w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain shrink-0 drop-shadow-xs"
           />
           <div className="min-w-0 flex items-center">
-            <GeoVisionBrand size="sm" idPrefix="panelHeader" />
+            <h2 className="text-[17px] sm:text-[18px] font-black tracking-tight text-slate-900 dark:text-white truncate select-none">
+              GeoVision
+            </h2>
           </div>
         </div>
 

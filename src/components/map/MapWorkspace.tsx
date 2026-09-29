@@ -1144,7 +1144,7 @@ export const MapWorkspace: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col md:flex-row bg-spatial-canvas">
+    <div className="relative w-full h-full overflow-hidden flex flex-col md:flex-row bg-spatial-canvas">
 
       {/* Main Visual Canvas Map */}
       <div className="relative flex-1 min-w-0 h-full w-full overflow-hidden">
@@ -1281,7 +1281,7 @@ export const MapWorkspace: React.FC = () => {
           title="Open GeoVision AI Assistant"
         >
           <img
-            src={getAssetUrl('globe-logo.png')}
+            src={getAssetUrl('chat-globe-logo.png')}
             alt="GeoVision AI"
             className="w-5 h-5 object-contain shrink-0 filter drop-shadow-xs"
           />
