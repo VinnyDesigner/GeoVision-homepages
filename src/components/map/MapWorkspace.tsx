@@ -21,6 +21,7 @@ import { X, Layers, ChevronUp } from 'lucide-react';
 export const MapWorkspace: React.FC = () => {
   const {
     language,
+    theme,
     activeBasemap,
     activeTool,
     selectedFeature,
@@ -29,6 +30,8 @@ export const MapWorkspace: React.FC = () => {
     setHoveredFeature,
     mapCenter,
     mapZoom,
+    setMapCenter,
+    setMapZoom,
     filteredFeatures,
     selectedCategoryIds,
     selectedSubcategoryIds,
@@ -210,24 +213,37 @@ export const MapWorkspace: React.FC = () => {
 
       const map = L.map(mapContainerRef.current, {
         center: targetLoc,
-        zoom: 12,
+        zoom: mapZoom || 12,
+        minZoom: 3,
+        maxZoom: 19,
         zoomControl: false,
         attributionControl: false,
         scrollWheelZoom: true,
-        doubleClickZoom: true,
+        doubleClickZoom: false,
         touchZoom: true,
         dragging: true,
         zoomSnap: 1,
         zoomDelta: 1,
         wheelDebounceTime: 40,
         wheelPxPerZoomLevel: 60,
-        preferCanvas: true,
+        preferCanvas: false,
       });
 
       markersGroupRef.current = L.layerGroup().addTo(map);
       drawnLayersGroupRef.current = L.layerGroup().addTo(map);
       boundaryGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
+      (window as any).geovisionMap = map;
+
+      // Sync map movements & zooms to state in real-time
+      map.on('zoomend', () => {
+        setMapZoom(map.getZoom());
+      });
+      map.on('moveend', () => {
+        const c = map.getCenter();
+        setMapCenter([c.lat, c.lng]);
+        setMapZoom(map.getZoom());
+      });
 
       // Immediate size recalculation for instant non-blocking map rendering
       map.invalidateSize();
@@ -288,18 +304,33 @@ export const MapWorkspace: React.FC = () => {
   // Listen to custom zoom & navigation events from toolbar
   useEffect(() => {
     const handleZoomInEvent = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.zoomIn(1);
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      const curZoom = map.getZoom();
+      const maxZoom = map.getMaxZoom ? map.getMaxZoom() : 19;
+      if (curZoom < maxZoom) {
+        const nextZoom = Math.min(Math.round(curZoom) + 1, maxZoom);
+        map.setZoom(nextZoom, { animate: true });
+        setMapZoom(nextZoom);
       }
     };
     const handleZoomOutEvent = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.zoomOut(1);
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      const curZoom = map.getZoom();
+      const minZoom = map.getMinZoom ? map.getMinZoom() : 3;
+      if (curZoom > minZoom) {
+        const nextZoom = Math.max(Math.round(curZoom) - 1, minZoom);
+        map.setZoom(nextZoom, { animate: true });
+        setMapZoom(nextZoom);
       }
     };
     const handleResetHomeEvent = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([24.4539, 54.3773], 12, { animate: true, duration: 1.2 });
+      const map = mapInstanceRef.current;
+      if (map) {
+        map.flyTo([24.4539, 54.3773], 12, { animate: true, duration: 1.2 });
+        setMapCenter([24.4539, 54.3773]);
+        setMapZoom(12);
       }
     };
     const handleFlyToEvent = (e: any) => {
@@ -416,18 +447,24 @@ export const MapWorkspace: React.FC = () => {
       return;
     }
 
+    const isDark = theme === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+    const titleColor = isDark ? '#FFFFFF' : '#0f172a';
+    const subColor = isDark ? '#94A3B8' : '#64748b';
+    const accentColor = isDark ? '#38BDF8' : '#215A9E';
+    const dotColor = isDark ? '#38BDF8' : '#215A9E';
+
     const popupContent = `
-      <div style="padding: 6px 10px; font-family: system-ui, sans-serif; min-width: 150px; max-width: 220px;">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-          <span style="width: 8px; height: 8px; border-radius: 9999px; background-color: #215A9E; display: inline-block;"></span>
-          <span style="font-weight: 900; font-size: 12px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <div class="geovision-hover-popup-content" style="padding: 8px 12px; font-family: inherit; min-width: 160px; max-width: 240px;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+          <span style="width: 8px; height: 8px; border-radius: 9999px; background-color: ${dotColor}; display: inline-block; flex-shrink: 0;"></span>
+          <span class="geovision-hover-popup-title" style="font-weight: 900; font-size: 12px; color: ${titleColor}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${language === 'ar' ? (activeFeat.nameAr || activeFeat.nameEn) : (activeFeat.nameEn || activeFeat.nameAr)}
           </span>
         </div>
-        <div style="font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 2px;">
+        <div class="geovision-hover-popup-sub" style="font-size: 10px; color: ${subColor}; font-weight: 700; margin-bottom: 3px;">
           ${activeFeat.subcategory || activeFeat.category || 'Location'}
         </div>
-        <div style="font-size: 10px; font-weight: 800; color: #215A9E; display: flex; align-items: center; gap: 4px;">
+        <div class="geovision-hover-popup-accent" style="font-size: 10px; font-weight: 800; color: ${accentColor}; display: flex; align-items: center; gap: 4px;">
           📍 ${(activeFeat.distanceKm || 1.5)} km away • ${(activeFeat.openStatusEn || 'Open 24/7')}
         </div>
       </div>
@@ -456,13 +493,20 @@ export const MapWorkspace: React.FC = () => {
         window.dispatchEvent(new CustomEvent('geovision:openFeatureDetails', { detail: activeFeat }));
       };
     }
-  }, [hoveredFeature, selectedFeature, language]);
+  }, [hoveredFeature, selectedFeature, language, theme]);
 
   // Single Unified Map Camera Control Effect with Frame Coalescing & Boundary Auto-Fit
   const flyToTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFramedKeyRef = useRef<string>('');
 
   useEffect(() => {
     if (!mapInstanceRef.current) return;
+
+    const currentKey = `${aiMessages.length}-${displayFeatures.length}-${selectedFeature?.id || ''}-${navigationTarget?.id || ''}`;
+    if (lastFramedKeyRef.current === currentKey) {
+      return;
+    }
+    lastFramedKeyRef.current = currentKey;
 
     if (flyToTimeoutRef.current) {
       clearTimeout(flyToTimeoutRef.current);
@@ -516,8 +560,6 @@ export const MapWorkspace: React.FC = () => {
         }
       } else if (selectedFeature) {
         mapInst.flyTo([selectedFeature.lat, selectedFeature.lng], 15, { animate: true, duration: 0.8 });
-      } else if (mapCenter && mapCenter.length === 2) {
-        mapInst.flyTo(mapCenter, mapZoom || 12, { animate: true, duration: 1.2 });
       }
     }, 25);
 
@@ -526,7 +568,7 @@ export const MapWorkspace: React.FC = () => {
         clearTimeout(flyToTimeoutRef.current);
       }
     };
-  }, [selectedFeature, navigationTarget, userLocation, mapCenter, mapZoom, displayFeatures, aiMessages]);
+  }, [selectedFeature, navigationTarget, userLocation, displayFeatures, aiMessages]);
 
   // Draw Dashed Navigation Route Polyline
   useEffect(() => {
@@ -1243,7 +1285,7 @@ export const MapWorkspace: React.FC = () => {
               </button>
               <span className="font-extrabold">{formatCoordinates(mapCenter[0], mapCenter[1], coordFormat)}</span>
               <span className="h-3 w-px bg-slate-300 dark:bg-slate-700" />
-              <span>Scale: 1:{Math.round(250000 / mapZoom)}</span>
+              <span>Scale: 1:{Math.round(131500 / Math.pow(2, (mapZoom || 12) - 12)).toLocaleString()}</span>
             </div>
           </div>
         )}

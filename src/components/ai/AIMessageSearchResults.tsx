@@ -974,7 +974,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
           <button
             type="button"
             onClick={() => setShowAnalytics(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 dark:hover:border-sky-500 transition-all cursor-pointer shadow-2xs"
             title={language === 'ar' ? 'تحليلات النتائج' : 'View Query Analytics'}
           >
             <BarChart2 className="w-3.5 h-3.5" />
@@ -984,7 +984,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
           <button
             type="button"
             onClick={() => setShowPrintReport(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 dark:hover:border-sky-500 transition-all cursor-pointer shadow-2xs"
             title={language === 'ar' ? 'طباعة التقرير' : 'Print Search Report'}
           >
             <Printer className="w-3.5 h-3.5" />
@@ -994,7 +994,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
           <button
             type="button"
             onClick={handleExportCSV}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-slate-800 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white text-[11px] font-black border border-blue-200 dark:border-slate-700 dark:hover:border-sky-500 transition-all cursor-pointer shadow-2xs"
             title={language === 'ar' ? 'تصدير CSV' : 'Export CSV'}
           >
             <Download className="w-3.5 h-3.5" />
@@ -1445,7 +1445,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                     <span
                       className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wide border ${isPriv
                         ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                        : 'bg-blue-50 text-geovision-blue dark:bg-slate-800 dark:text-blue-300 border-blue-200/80 dark:border-slate-700'
+                        : 'bg-blue-50 text-geovision-blue dark:bg-slate-800 dark:text-sky-300 border-blue-200/80 dark:border-slate-700'
                         }`}
                     >
                       {isPriv ? 'Private' : 'Public'}
@@ -1456,7 +1456,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                 {/* Compact Bottom Bar (Metadata + Quick Action Buttons) */}
                 <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px]">
                   <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-semibold min-w-0 flex-1">
-                    <span className="flex items-center gap-0.5 text-geovision-blue dark:text-blue-300 font-black shrink-0">
+                    <span className="flex items-center gap-0.5 text-geovision-blue dark:text-sky-300 font-black shrink-0">
                       <MapPin className="w-3 h-3" />
                       <span>{dist} km</span>
                     </span>
@@ -1477,7 +1477,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         if (currentView !== 'map') setCurrentView('map');
                         showToast(language === 'ar' ? `التركيز على ${feat.nameAr}` : `Zoomed to ${feat.nameEn}`);
                       }}
-                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white transition-all cursor-pointer text-[9.5px] font-extrabold"
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-all cursor-pointer text-[9.5px] font-extrabold"
                       title={language === 'ar' ? 'التركيز على الخريطة' : 'Focus on map'}
                     >
                       <ZoomIn className="w-2.5 h-2.5" />
@@ -1501,7 +1501,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       }}
                       className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9.5px] font-extrabold transition-all cursor-pointer ${expandedDirectionsId === feat.id
                         ? 'bg-geovision-blue text-white border-blue-600'
-                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white'
+                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white'
                         }`}
                       title={language === 'ar' ? 'الاتجاهات' : 'Directions'}
                     >
@@ -1534,7 +1534,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       }}
                       className={`p-1 rounded-md border transition-all cursor-pointer ${isFav
                         ? 'bg-geovision-blue text-white border-blue-600 shadow-sm'
-                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-blue-100'
+                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-blue-100 dark:hover:bg-slate-700'
                         }`}
                       title={isFav ? 'Favorite' : 'Add to favorite'}
                     >
@@ -1553,7 +1553,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                           setExpandedDirectionsId(null);
                         }
                       }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-extrabold transition-all cursor-pointer bg-blue-50 dark:bg-blue-950/80 border-blue-200 dark:border-blue-800 text-geovision-blue dark:text-blue-300 hover:bg-geovision-blue hover:text-white"
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-extrabold transition-all cursor-pointer bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white"
                       title={language === 'ar' ? 'التفاصيل' : 'Details'}
                     >
                       <Info className="w-3 h-3" />

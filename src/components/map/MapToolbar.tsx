@@ -66,19 +66,27 @@ export const MapToolbar: React.FC = () => {
     setPrintModalOpen(!printModalOpen);
   };
 
-  const handleZoomIn = () => {
+  const handleZoomIn = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     window.dispatchEvent(new CustomEvent('geovision:zoomIn'));
-    const nextZoom = Math.min(Math.floor(mapZoom) + 1, 19);
-    showToast(language === 'ar' ? `مستوى التكبير: ${nextZoom}` : `Zoom level: ${nextZoom}`);
   };
 
-  const handleZoomOut = () => {
+  const handleZoomOut = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     window.dispatchEvent(new CustomEvent('geovision:zoomOut'));
-    const nextZoom = Math.max(Math.ceil(mapZoom) - 1, 3);
-    showToast(language === 'ar' ? `مستوى التكبير: ${nextZoom}` : `Zoom level: ${nextZoom}`);
   };
 
-  const handleHomeClick = () => {
+  const handleHomeClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     window.dispatchEvent(new CustomEvent('geovision:resetHome'));
     showToast(language === 'ar' ? 'تمت إعادة ضبط الخريطة إلى النطاق الافتراضي لأبوظبي' : 'Map reset to Abu Dhabi default extent');
   };
@@ -148,14 +156,20 @@ export const MapToolbar: React.FC = () => {
   };
 
   return (
-    <div className="absolute top-[76px] sm:top-[86px] left-3 sm:left-4 rtl:left-auto rtl:right-3 sm:rtl:right-4 z-[600] flex flex-col items-center">
+    <div
+      className="absolute top-[76px] sm:top-[86px] left-3 sm:left-4 rtl:left-auto rtl:right-3 sm:rtl:right-4 z-[600] flex flex-col items-center select-none"
+      onMouseDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Single Unified Capsule Group */}
       <div className="glass-level-3 bg-white/85 dark:bg-slate-900/90 backdrop-blur-xl p-1 rounded-2xl shadow-xl border border-white/80 dark:border-slate-700/80 flex flex-col items-center gap-1 w-12 sm:w-13 transition-all duration-300">
         
         {/* Zoom In (+ icon only) */}
         <button
           onClick={handleZoomIn}
-          className="w-full py-1 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer"
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="w-full py-1 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer active:scale-90"
           title={language === 'ar' ? 'تكبير (+)' : 'Zoom In (+)'}
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -164,7 +178,8 @@ export const MapToolbar: React.FC = () => {
         {/* Zoom Out (- icon only) */}
         <button
           onClick={handleZoomOut}
-          className="w-full py-1 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer"
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="w-full py-1 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer active:scale-90"
           title={language === 'ar' ? 'تصغير (-)' : 'Zoom Out (-)'}
         >
           <Minus className="w-4 h-4 stroke-[2.5]" />
@@ -173,7 +188,8 @@ export const MapToolbar: React.FC = () => {
         {/* Home */}
         <button
           onClick={handleHomeClick}
-          className="w-full py-1 px-0.5 rounded-xl flex flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer"
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="w-full py-1 px-0.5 rounded-xl flex flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-geovision-blue transition-all cursor-pointer active:scale-90"
           title={language === 'ar' ? 'العودة إلى النطاق الرئيسي' : 'Return to Home Extent'}
         >
           <Home className="w-3.5 h-3.5 stroke-[2]" />

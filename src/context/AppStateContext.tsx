@@ -85,6 +85,8 @@ interface AppStateContextType {
   mapCenter: [number, number];
   mapZoom: number;
   setMapCenterAndZoom: (center: [number, number], zoom: number) => void;
+  setMapCenter: React.Dispatch<React.SetStateAction<[number, number]>>;
+  setMapZoom: React.Dispatch<React.SetStateAction<number>>;
   zoomIn: () => void;
   zoomOut: () => void;
   aoiResult: AOIResult | null;
@@ -275,11 +277,11 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [mapZoom, setMapZoom] = useState<number>(12);
 
   const zoomIn = () => {
-    setMapZoom((prev) => Math.min(Math.floor(prev) + 1, 19));
+    window.dispatchEvent(new CustomEvent('geovision:zoomIn'));
   };
 
   const zoomOut = () => {
-    setMapZoom((prev) => Math.max(Math.ceil(prev) - 1, 3));
+    window.dispatchEvent(new CustomEvent('geovision:zoomOut'));
   };
 
   const [aoiResult, setAoiResult] = useState<AOIResult | null>(null);
@@ -4858,6 +4860,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
         mapCenter,
         mapZoom,
         setMapCenterAndZoom,
+        setMapCenter,
+        setMapZoom,
         zoomIn,
         zoomOut,
         aoiResult,

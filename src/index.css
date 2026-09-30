@@ -394,15 +394,26 @@ strong:not(.font-brand), b:not(.font-brand),
   color: #FFFFFF !important;
 }
 
-/* Exception: Preserve high-contrast dark text on solid light elements (e.g. white CTA buttons) in dark mode */
-.dark .bg-white.text-\[\#063360\],
-.dark .bg-white .text-\[\#063360\],
-.dark button.bg-white,
-.dark button.bg-white *,
-.dark .bg-white button,
+/* Exception: Preserve high-contrast dark text ONLY on solid light CTA elements that stay white in dark mode */
 .dark .dark-preserve-dark-text,
-.dark .dark-preserve-dark-text * {
+.dark .dark-preserve-dark-text *,
+.dark button.bg-white:not([class*="dark:bg-"]),
+.dark button.bg-white:not([class*="dark:bg-"]) * {
   color: #063360 !important;
+}
+
+/* Ensure vibrant visibility for light sky/blue text and accents in dark mode */
+.dark .text-sky-300 {
+  color: #7DD3FC !important;
+}
+.dark .text-sky-400 {
+  color: #38BDF8 !important;
+}
+.dark .text-blue-300 {
+  color: #93C5FD !important;
+}
+.dark .text-blue-400 {
+  color: #60A5FA !important;
 }
 
 /* Custom Blue & Red Palette Helpers */
@@ -769,6 +780,48 @@ strong:not(.font-brand), b:not(.font-brand),
   justify-content: center;
   transition: all 0.2s;
   backdrop-filter: blur(10px);
+}
+
+/* Card Hover Popup on Leaflet Map */
+.leaflet-popup.geovision-map-card-popup {
+  z-index: 999 !important;
+}
+
+.leaflet-popup.geovision-map-card-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(6, 51, 96, 0.16) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.dark .leaflet-popup.geovision-map-card-popup .leaflet-popup-content-wrapper {
+  background: rgba(10, 25, 46, 0.95) !important;
+  backdrop-filter: blur(25px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(160%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75) !important;
+  color: #F8FAFC !important;
+}
+
+.leaflet-popup.geovision-map-card-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dark .geovision-hover-popup-title {
+  color: #FFFFFF !important;
+}
+
+.dark .geovision-hover-popup-sub {
+  color: #94A3B8 !important;
+}
+
+.dark .geovision-hover-popup-accent {
+  color: #38BDF8 !important;
 }
 
 /* ------------------------------------------------------------------------- */
