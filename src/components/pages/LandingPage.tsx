@@ -189,7 +189,11 @@ export const LandingPage: React.FC = () => {
         >
           {/* GeoVision Brand Title - One Seamless Word with Precision-Aligned Morphing Map Pointer 'o' */}
           <div className="inline-flex items-center justify-center select-none mb-3 sm:mb-4 md:mb-5">
-            <div className="flex items-baseline text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] font-black font-sans leading-none tracking-tight">
+            <div
+              className="flex items-baseline text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] font-black font-brand geovision-brand-title leading-none tracking-tight"
+              style={{ fontFamily: '"Montserrat", sans-serif' }}
+              data-brand="geovision"
+            >
               <span className="text-[#0A192F] dark:text-white drop-shadow-xs dark:drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]">Ge</span><span
                 className="inline-block relative shrink-0"
                 style={{

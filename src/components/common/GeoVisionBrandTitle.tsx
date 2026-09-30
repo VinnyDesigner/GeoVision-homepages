@@ -120,7 +120,9 @@ export const GeoVisionBrand: React.FC<GeoVisionBrandProps> = ({
 
   return (
     <div
-      className={`inline-flex items-baseline font-sans leading-none tracking-tight select-none ${sizeClasses} ${className}`}
+      className={`inline-flex items-baseline font-brand geovision-brand-title leading-none tracking-tight select-none ${sizeClasses} ${className}`}
+      style={{ fontFamily: '"Montserrat", sans-serif' }}
+      data-brand="geovision"
     >
       <span className="text-[#0A192F] dark:text-white drop-shadow-xs dark:drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">
         Ge

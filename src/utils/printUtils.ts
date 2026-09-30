@@ -41,7 +41,7 @@ export const triggerPrintDocument = (
             padding: 16px;
             color: #0f172a;
             background: #ffffff !important;
-            font-family: 'Plus Jakarta Sans', 'Noto Kufi Arabic', system-ui, -apple-system, sans-serif;
+            font-family: 'Helvetica LT W05 Roman', 'Helvetica Neue W05_55 Roman', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

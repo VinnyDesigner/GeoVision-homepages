@@ -2590,11 +2590,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
               ? within5km.slice(0, 8)
               : allHealth.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0)).slice(0, 8);
 
-            const nearestListEn = matchedFeats.slice(0, 3).map((h, i) => `${i + 1}. ${h.nameEn} (Distance: ${h.distanceKm} km)`).join('\n');
-            const nearestListAr = matchedFeats.slice(0, 3).map((h, i) => `${i + 1}. ${h.nameAr} (المسافة: ${h.distanceKm} كم)`).join('\n');
-
-            responseEn = `Found ${matchedFeats.length} hospitals within 5 km of your location.\n\nNearest hospitals:\n${nearestListEn}\n\nData Source:\nAbu Dhabi SDI Healthcare Layer`;
-            responseAr = `عثرت على ${matchedFeats.length} مستشفيات ضمن نطاق 5 كم من موقعك.\n\nأقرب المستشفيات:\n${nearestListAr}\n\nمصدر البيانات:\nالبنية التحتية للبيانات المكانية لأبوظبي (SDI)`;
+            responseEn = `Found ${matchedFeats.length} hospitals within 5 km of your location.\n\nData Source:\nAbu Dhabi SDI Healthcare Layer`;
+            responseAr = `عثرت على ${matchedFeats.length} مستشفيات ضمن نطاق 5 كم من موقعك.\n\nمصدر البيانات:\nالبنية التحتية للبيانات المكانية لأبوظبي (SDI)`;
             newCenter = [refLat, refLng];
             newZoom = 13;
             if (lower.includes('within') || lower.includes('5km') || lower.includes('5 km') || query.includes('على بعد 5 كم')) {
@@ -2626,8 +2623,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
               spatialOperationAr: 'نطاق جاذبية دائرية 5 كم حول إحداثيات المستخدم',
               sourceProviderEn: 'Abu Dhabi SDI (Spatial Data Infrastructure)',
               sourceProviderAr: 'البنية التحتية للبيانات المكانية - أبوظبي SDI',
-              aiExplanationEn: 'Extracted nearest healthcare facilities using official spatial boundary vector tiles.',
-              aiExplanationAr: 'تم استخراج أقرب مرافق الرعاية الصحية باستخدام المتجهات المكانية المعتمدة.',
+              aiExplanationEn: 'Identified healthcare facilities within 5 km radial buffer using official spatial boundary vector tiles.',
+              aiExplanationAr: 'تم تحديد مرافق الرعاية الصحية ضمن نطاق عازل 5 كم باستخدام المتجهات المكانية المعتمدة.',
             };
 
             recsEn = ['Only government hospitals', 'Which one is closest?', 'Show schools within 2 km of bus stations in Khalifa City'];

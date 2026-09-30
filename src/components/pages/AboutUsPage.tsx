@@ -16,7 +16,6 @@ import {
   Eye,
   Users,
   Compass,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const AboutUsPage: React.FC = () => {
@@ -49,16 +48,16 @@ export const AboutUsPage: React.FC = () => {
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
             {language === 'ar' ? (
               <>
-                المستقبل المكاني لإمارة <br />
+                من نحن <br />
                 <span className="bg-gradient-to-r from-[#063360] via-[#215A9E] to-[#176BFF] dark:from-sky-300 dark:via-blue-400 dark:to-indigo-300 bg-clip-text text-transparent">
-                  أبوظبي الذكية
+                  منصة GeoVision
                 </span>
               </>
             ) : (
               <>
-                Next-Gen Spatial Intelligence for <br />
+                About Us <br />
                 <span className="bg-gradient-to-r from-[#063360] via-[#215A9E] to-[#176BFF] dark:from-sky-300 dark:via-blue-400 dark:to-indigo-300 bg-clip-text text-transparent">
-                  Abu Dhabi Emirate
+                  GeoVision
                 </span>
               </>
             )}
@@ -81,7 +80,7 @@ export const AboutUsPage: React.FC = () => {
             </button>
 
             <a
-              href="https://dge.gov.ae"
+              href="https://www.dge.gov.ae/en"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-extrabold text-sm shadow-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
@@ -99,56 +98,56 @@ export const AboutUsPage: React.FC = () => {
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:border-[#215A9E]/40 hover:-translate-y-1 transition-all group">
             <div className="flex items-center justify-between">
               <span className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                100%
+                {t('about.stat1Num')}
               </span>
               <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
                 <Sparkles className="w-6 h-6" />
               </div>
             </div>
             <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-3">
-              Digital Transformation
+              {t('about.stat1Label')}
             </p>
           </div>
 
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:border-[#215A9E]/40 hover:-translate-y-1 transition-all group">
             <div className="flex items-center justify-between">
               <span className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                50+
+                {t('about.stat2Num')}
               </span>
               <div className="w-12 h-12 rounded-2xl bg-[#215A9E]/10 text-[#215A9E] dark:text-sky-300 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
                 <Building2 className="w-6 h-6" />
               </div>
             </div>
             <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-3">
-              Government Entities
+              {t('about.stat2Label')}
             </p>
           </div>
 
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:border-[#215A9E]/40 hover:-translate-y-1 transition-all group">
             <div className="flex items-center justify-between">
               <span className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                500+
+                {t('about.stat3Num')}
               </span>
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
                 <Database className="w-6 h-6" />
               </div>
             </div>
             <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-3">
-              GIS Layers & Datasets
+              {t('about.stat3Label')}
             </p>
           </div>
 
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:border-[#215A9E]/40 hover:-translate-y-1 transition-all group">
             <div className="flex items-center justify-between">
               <span className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                &lt; 50ms
+                {t('about.stat4Num')}
               </span>
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
                 <Gauge className="w-6 h-6" />
               </div>
             </div>
             <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-3">
-              Spatial Query Latency
+              {t('about.stat4Label')}
             </p>
           </div>
 
@@ -164,7 +163,7 @@ export const AboutUsPage: React.FC = () => {
                 : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
             }`}
           >
-            All Initiatives
+            {language === 'ar' ? 'جميع المبادرات' : 'All Initiatives'}
           </button>
           <button
             onClick={() => setActiveTab('dge')}
@@ -174,7 +173,7 @@ export const AboutUsPage: React.FC = () => {
                 : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
             }`}
           >
-            DGE Government Enablement
+            {t('about.dgeTitle')}
           </button>
           <button
             onClick={() => setActiveTab('sdi')}
@@ -184,7 +183,7 @@ export const AboutUsPage: React.FC = () => {
                 : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
             }`}
           >
-            AD-SDI Spatial Infrastructure
+            {t('about.sdiTitle')}
           </button>
           <button
             onClick={() => setActiveTab('mission')}
@@ -194,7 +193,7 @@ export const AboutUsPage: React.FC = () => {
                 : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
             }`}
           >
-            Mission & Principles
+            {t('about.missionTitle')}
           </button>
         </div>
 
@@ -211,11 +210,11 @@ export const AboutUsPage: React.FC = () => {
                     <span>{t('about.dgeTag')}</span>
                   </div>
                   <a
-                    href="https://dge.gov.ae"
+                    href="https://www.dge.gov.ae/en"
                     target="_blank"
                     rel="noreferrer"
                     className="p-2 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    title="Visit DGE Website"
+                    title={t('about.dgeBtn')}
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -238,31 +237,31 @@ export const AboutUsPage: React.FC = () => {
               <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-200/60 dark:border-slate-800">
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 space-y-1">
                   <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#215A9E]" />
-                    <span>Centralized Enabler</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#215A9E] shrink-0" />
+                    <span>{t('about.dgeCard1Title')}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-2">
-                    High-quality services to entities, citizens & residents.
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-3">
+                    {t('about.dgeCard1Desc')}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 space-y-1">
                   <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-sky-500" />
-                    <span>Digital Strategy</span>
+                    <Cpu className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                    <span>{t('about.dgeCard2Title')}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-2">
-                    Leads 2023-2027 government digital transformation.
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-3">
+                    {t('about.dgeCard2Desc')}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 space-y-1">
                   <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Team Behind Teams</span>
+                    <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span>{t('about.dgeCard3Title')}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-2">
-                    Driving force behind Abu Dhabi's smart future.
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-3">
+                    {t('about.dgeCard3Desc')}
                   </p>
                 </div>
               </div>
@@ -317,9 +316,13 @@ export const AboutUsPage: React.FC = () => {
                     {t('about.sdiBody2')}
                   </p>
 
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                    {t('about.sdiBody3')}
+                  </p>
+
                   <div className="pt-2">
                     <a
-                      href="https://sdi.abudhabi.ae"
+                      href="https://sdi.gov.abudhabi/sdi/index.html"
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#063360] hover:bg-[#215A9E] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all"
@@ -458,7 +461,7 @@ export const AboutUsPage: React.FC = () => {
 
         {/* ================= FOOTER ================= */}
         <footer className="pt-10 border-t border-slate-200 dark:border-slate-800/80 space-y-8 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-8 mb-8">
             
             <div className="space-y-3">
               <div className="flex items-center gap-2 font-black text-slate-900 dark:text-white text-base">
@@ -468,58 +471,31 @@ export const AboutUsPage: React.FC = () => {
                 <span>GeoVision</span>
               </div>
               <p className="text-xs leading-relaxed max-w-sm">
-                Providing instant access to Tourism, Civic Infrastructure, Government, Transit, Healthcare, and Education spatial services across Abu Dhabi.
+                {language === 'ar'
+                  ? 'تمكين الوصول السهل للخدمات المكانية والبيانات المفتوحة في جميع أنحاء أبوظبي.'
+                  : 'Enabling seamless access to geospatial intelligence, community infrastructure, and open data across Abu Dhabi.'}
               </p>
             </div>
 
             <div className="space-y-2">
               <h5 className="font-extrabold uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
-                Quick Links
+                {language === 'ar' ? 'روابط سريعة' : 'Quick Links'}
               </h5>
               <ul className="space-y-1.5 text-xs">
-                <li>
-                  <button onClick={() => setCurrentView('home')} className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
-                    GeoVision Home
-                  </button>
-                </li>
                 <li>
                   <button onClick={() => setCurrentView('map')} className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
-                    Smart Map Explorer
+                    {language === 'ar' ? 'خريطة GeoVision' : 'GeoVision Map'}
                   </button>
                 </li>
                 <li>
-                  <a href="https://sdi.abudhabi.ae" target="_blank" rel="noreferrer" className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
-                    AD-SDI Portal
+                  <a href="https://sdi.gov.abudhabi/sdi/index.html" target="_blank" rel="noreferrer" className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
+                    {language === 'ar' ? 'بوابة AD-SDI' : 'AD-SDI Portal'}
                   </a>
                 </li>
                 <li>
-                  <a href="https://dge.gov.ae" target="_blank" rel="noreferrer" className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
-                    DGE Website
+                  <a href="https://www.dge.gov.ae/en" target="_blank" rel="noreferrer" className="hover:text-[#215A9E] dark:hover:text-sky-300 transition-colors">
+                    {language === 'ar' ? 'موقع دائرة التمكين الحكومي' : 'DGE Website'}
                   </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-2">
-              <h5 className="font-extrabold uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
-                Data Themes
-              </h5>
-              <ul className="space-y-1.5 text-xs">
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
-                  <span>Tourism & Culture</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#215A9E]" />
-                  <span>Government Facilities</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Civic Infrastructure</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Transit & Mobility</span>
                 </li>
               </ul>
             </div>
@@ -528,7 +504,7 @@ export const AboutUsPage: React.FC = () => {
 
           <div className="pt-6 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
             <div>
-              © 2026 Abu Dhabi Spatial Data Infrastructure • AD-SDI GeoVision
+              © 2026 Abu Dhabi Spatial Data Infrastructure – AD-SDI GeoVision | UAE Open Data Initiative
             </div>
             <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />

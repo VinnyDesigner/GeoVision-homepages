@@ -54,29 +54,26 @@ async function run() {
     ws.onerror = reject;
   });
 
-  console.log('Sending query "Show hospitals within 5 km of my location"...');
+  // Navigate to About Us
+  console.log('Navigating to About Us...');
   await send('Runtime.evaluate', {
     expression: `(() => {
-      // Find button recommendation or input
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Show hospitals within 5 km of my location'));
-      if (btn) {
-        btn.click();
-      } else {
-        const input = document.querySelector('input[placeholder*="Ask"]');
-        if (input) {
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-          nativeInputValueSetter.call(input, 'Show hospitals within 5 km of my location');
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.form ? input.form.dispatchEvent(new Event('submit', { bubbles: true })) : input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-        }
-      }
+      window.location.hash = '#about';
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('About Us') || b.textContent.includes('من نحن'));
+      if (btn) btn.click();
     })()`
   });
-  await new Promise((r) => setTimeout(r, 2500));
+  await new Promise((r) => setTimeout(r, 1500));
 
-  // Capture screenshot of query response
+  // Scroll to bottom
+  await send('Runtime.evaluate', {
+    expression: `window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });`
+  });
+  await new Promise((r) => setTimeout(r, 1000));
+
+  // Capture screenshot of footer
   const screenshotRes = await send('Page.captureScreenshot', { format: 'png' });
-  const outPath = path.resolve('scratch/chat_response_font_verified.png');
+  const outPath = path.resolve('scratch/about_footer_verified.png');
   fs.writeFileSync(outPath, Buffer.from(screenshotRes.data, 'base64'));
   console.log('Screenshot saved to:', outPath);
 
