@@ -342,17 +342,28 @@ export const MapWorkspace: React.FC = () => {
         mapInstanceRef.current.flyTo(e.detail.center, e.detail.zoom || 16, { animate: true, duration: 1.2 });
       }
     };
+    const handlePanToEvent = (e: any) => {
+      if (mapInstanceRef.current && e.detail && e.detail.center) {
+        if (flyToTimeoutRef.current) {
+          clearTimeout(flyToTimeoutRef.current);
+        }
+        mapInstanceRef.current.invalidateSize();
+        mapInstanceRef.current.panTo(e.detail.center, { animate: true, duration: 0.8 });
+      }
+    };
 
     window.addEventListener('geovision:zoomIn', handleZoomInEvent);
     window.addEventListener('geovision:zoomOut', handleZoomOutEvent);
     window.addEventListener('geovision:resetHome', handleResetHomeEvent);
     window.addEventListener('geovision:flyTo', handleFlyToEvent);
+    window.addEventListener('geovision:panTo', handlePanToEvent);
 
     return () => {
       window.removeEventListener('geovision:zoomIn', handleZoomInEvent);
       window.removeEventListener('geovision:zoomOut', handleZoomOutEvent);
       window.removeEventListener('geovision:resetHome', handleResetHomeEvent);
       window.removeEventListener('geovision:flyTo', handleFlyToEvent);
+      window.removeEventListener('geovision:panTo', handlePanToEvent);
     };
   }, []);
 
@@ -413,10 +424,10 @@ export const MapWorkspace: React.FC = () => {
         L.DomEvent.stopPropagation(e);
         setSelectedFeature(feat);
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([feat.lat, feat.lng], 16, { animate: true, duration: 1.2 });
+          mapInstanceRef.current.panTo([feat.lat, feat.lng], { animate: true, duration: 0.8 });
         }
         setAiPanelOpen(true);
-        window.dispatchEvent(new CustomEvent('geovision:openFeatureDetails', { detail: feat }));
+        window.dispatchEvent(new CustomEvent('geovision:selectAndExpandFeature', { detail: feat }));
       });
 
       marker.on('mouseover', () => {
@@ -496,7 +507,7 @@ export const MapWorkspace: React.FC = () => {
       popupElem.onclick = () => {
         setSelectedFeature(activeFeat);
         setAiPanelOpen(true);
-        window.dispatchEvent(new CustomEvent('geovision:openFeatureDetails', { detail: activeFeat }));
+        window.dispatchEvent(new CustomEvent('geovision:selectAndExpandFeature', { detail: activeFeat }));
       };
     }
   }, [hoveredFeature, selectedFeature, language, theme]);
@@ -529,8 +540,8 @@ export const MapWorkspace: React.FC = () => {
         const routeBounds = L.latLngBounds([origin, destination]);
         mapInst.flyToBounds(routeBounds, { padding: [90, 90], maxZoom: 15, duration: 1.2 });
       } else if (selectedFeature) {
-        // When a card or feature is selected, zoom and pan smoothly to that particular location!
-        mapInst.flyTo([selectedFeature.lat, selectedFeature.lng], 16, { animate: true, duration: 1.2 });
+        // When a card or feature is selected, smoothly pan to highlight that location without changing zoom!
+        mapInst.panTo([selectedFeature.lat, selectedFeature.lng], { animate: true, duration: 0.8 });
       } else if (displayFeatures.length > 0) {
         // Collect ALL coordinates for pointers AND location boundary polygon to ensure zoom out effect frames EVERYTHING at once
         const allPoints: [number, number][] = [];

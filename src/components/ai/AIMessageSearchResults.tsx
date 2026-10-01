@@ -32,6 +32,7 @@ import {
   Shield,
   LayoutGrid,
   ArrowLeft,
+  ArrowRight,
   Bus,
   Zap,
   Pill,
@@ -224,6 +225,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
 }) => {
   const appState = useAppState();
   const setMapCenterAndZoom = appState.setMapCenterAndZoom;
+  const panToMapLocation = appState.panToMapLocation;
   const setCurrentView = appState.setCurrentView;
   const showToast = appState.showToast;
   const language = languageProp || appState.language || 'en';
@@ -261,13 +263,14 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => initialFeatureCategories);
   const [searchFilter, setSearchFilter] = useState('');
-  const [visibleCount, setVisibleCount] = useState(6);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showPrintReport, setShowPrintReport] = useState(false);
   const [activeRouteTarget, setActiveRouteTarget] = useState<GeoFeature | null>(null);
 
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
+  const [expandedAccordionId, setExpandedAccordionId] = useState<string | null>(() => selectedFeature?.id || null);
   const [activeInlineTab, setActiveInlineTab] = useState<'overview' | 'nearby' | 'details' | 'related'>('overview');
   const [expandedDirectionsId, setExpandedDirectionsId] = useState<string | null>(null);
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(3);
@@ -276,9 +279,21 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
 
   const featureListRef = useRef<HTMLDivElement>(null);
+  const lastSelectedFeatureIdRef = useRef<string | null>(selectedFeature?.id || null);
 
   const setGuestPromptOpen = appState.setGuestPromptOpen;
   const user = appState.user;
+
+  // Single source of truth: sync expanded accordion with selectedFeature when selected from outside or returning from Details
+  useEffect(() => {
+    if (selectedFeature?.id && selectedFeature.id !== lastSelectedFeatureIdRef.current) {
+      lastSelectedFeatureIdRef.current = selectedFeature.id;
+      setExpandedAccordionId(selectedFeature.id);
+    } else if (!selectedFeature) {
+      lastSelectedFeatureIdRef.current = null;
+    }
+  }, [selectedFeature?.id]);
+
 
   // Sync with global appState.selectedCategoryIds when user selects a category anywhere in the app
   useEffect(() => {
@@ -378,16 +393,48 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
     return true;
   });
 
+  // Map pointer & external synchronization: auto-select, expand accordion, and scroll to card
+  useEffect(() => {
+    const handleSelectAndExpand = (e: CustomEvent<GeoFeature>) => {
+      const feat = e.detail;
+      if (!feat) return;
+
+      const featIdx = filteredFeatures.findIndex((f) => f.id === feat.id || f.nameEn === feat.nameEn);
+      if (featIdx !== -1) {
+        if (featIdx >= visibleCount) {
+          setVisibleCount(featIdx + 5);
+        }
+        setExpandedAccordionId(feat.id);
+        setSelectedFeature(feat);
+
+        // Smoothly scroll results list container to this card without scrolling the window
+        setTimeout(() => {
+          const container = featureListRef.current;
+          const cardEl = document.getElementById(`result-card-${feat.id}`);
+          if (container && cardEl) {
+            const topDiff = cardEl.getBoundingClientRect().top - container.getBoundingClientRect().top;
+            container.scrollBy({ top: topDiff - 8, behavior: 'smooth' });
+          }
+        }, 60);
+      }
+    };
+
+    window.addEventListener('geovision:selectAndExpandFeature', handleSelectAndExpand as EventListener);
+    return () => {
+      window.removeEventListener('geovision:selectAndExpandFeature', handleSelectAndExpand as EventListener);
+    };
+  }, [filteredFeatures, visibleCount, setSelectedFeature]);
+
   const isHighVolume = features.length >= 100 || filteredFeatures.length > 20;
 
-  // If cards count is >= 100 (or in general high volume list), adjust to show at least 6 cards
-  const minCardsInList = (features.length >= 100 || filteredFeatures.length >= 100) ? 6 : 6;
+  // If cards count is >= 100 (or in general high volume list), adjust to show at least 10 cards
+  const minCardsInList = (features.length >= 100 || filteredFeatures.length >= 100) ? 10 : 10;
   const effectiveVisibleCount = Math.max(visibleCount, minCardsInList);
   const displayedFeatures = filteredFeatures.slice(0, effectiveVisibleCount);
 
   useEffect(() => {
-    if ((features.length >= 100 || filteredFeatures.length >= 100) && visibleCount < 6) {
-      setVisibleCount(6);
+    if ((features.length >= 100 || filteredFeatures.length >= 100) && visibleCount < 10) {
+      setVisibleCount(10);
     }
   }, [features.length, filteredFeatures.length]);
 
@@ -1290,7 +1337,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
           {language === 'ar' ? 'لا توجد نتائج مطابقة للتصفية المختارة.' : 'No spatial matches found for selected category/type filter.'}
         </div>
       ) : (
-        <div ref={featureListRef} className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1 scrollbar-none">
+        <div ref={featureListRef} className="space-y-1.5 max-h-[560px] overflow-y-auto pr-1 scrollbar-none">
           {displayedFeatures.map((feat) => {
             const isPriv = isFeaturePrivate(feat);
             const isFav = isFavorite(feat.nameEn);
@@ -1301,71 +1348,74 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
 
             return (
               <div
+                id={`result-card-${feat.id}`}
                 key={feat.id}
                 onMouseEnter={() => setHoveredFeature && setHoveredFeature(feat)}
                 onMouseLeave={() => setHoveredFeature && setHoveredFeature(null)}
                 onClick={() => {
                   setSelectedFeature(feat);
-                  setMapCenterAndZoom([feat.lat, feat.lng], 16);
+                  panToMapLocation([feat.lat, feat.lng]);
                   if (currentView !== 'map') setCurrentView('map');
-                  showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
+                  showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Focused on ${feat.nameEn}`);
                 }}
-                className={`relative rounded-xl bg-white dark:bg-slate-900 border ${isHovered || isSelected ? 'border-geovision-blue dark:border-blue-400 ring-2 ring-blue-500/30' : 'border-slate-200/90 dark:border-slate-800'
-                  } hover:border-geovision-blue dark:hover:border-blue-500 cursor-pointer transition-all duration-200 p-2 sm:p-2.5 space-y-1.5 shadow-2xs hover:shadow-md hover:shadow-blue-500/10 group overflow-hidden`}
+                title={`${language === 'ar' ? feat.nameAr : feat.nameEn} — ${feat.subcategory || feat.category}`}
+                className={`relative rounded-xl bg-white dark:bg-slate-900 border ${isHovered || isSelected || expandedAccordionId === feat.id ? 'border-geovision-blue dark:border-blue-400 ring-2 ring-blue-500/30' : 'border-slate-200/90 dark:border-slate-800'
+                  } hover:border-geovision-blue dark:hover:border-blue-500 cursor-pointer transition-all duration-200 py-1.5 px-2.5 space-y-1 shadow-2xs hover:shadow-md hover:shadow-blue-500/10 group overflow-hidden`}
               >
                 {/* Top Category Accent Line */}
                 <div className={`absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r ${styleInfo.accentColor} opacity-75 group-hover:opacity-100 transition-opacity`} />
 
-                {/* Compact Header Row */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                {/* Compact Row 1: Category Icon + Title + Badges */}
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     {/* Category Icon Avatar */}
-                    <div className={`w-7 h-7 rounded-lg ${styleInfo.bgGradient} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200`}>
+                    <div className={`w-6 h-6 rounded-md ${styleInfo.bgGradient} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200 [&>svg]:w-3.5 [&>svg]:h-3.5 [&>div>svg]:w-3.5 [&>div>svg]:h-3.5`}>
                       {styleInfo.icon}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h5 className="text-xs font-black text-slate-900 dark:text-slate-100 group-hover:text-geovision-blue dark:group-hover:text-blue-400 transition-colors truncate leading-snug">
-                        {language === 'ar' ? feat.nameAr : feat.nameEn}
-                      </h5>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold truncate leading-tight">
-                        {feat.subcategory || feat.category} • {feat.addressEn || feat.addressAr}
-                      </p>
-                    </div>
+                    <h5 className="text-xs font-black text-slate-900 dark:text-slate-100 group-hover:text-geovision-blue dark:group-hover:text-blue-400 transition-colors truncate leading-tight flex-1">
+                      {language === 'ar' ? feat.nameAr : feat.nameEn}
+                    </h5>
                   </div>
 
-                  {/* Badges (Rating & Sector) */}
+                  {/* Compact Badges (Rating & Sector) */}
                   <div className="flex items-center gap-1 shrink-0">
-                    <span className="flex items-center gap-0.5 text-[9.5px] font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md border border-slate-200/80 dark:border-slate-700">
+                    <span className="flex items-center gap-0.5 text-[9px] font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 px-1 py-0.5 rounded border border-slate-200/80 dark:border-slate-700">
                       <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
-                      <span>4.8</span>
+                      <span>{feat.rating || '4.8'}</span>
                     </span>
                     <span
-                      className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wide border ${isPriv
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${isPriv
                         ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                         : 'bg-blue-50 text-geovision-blue dark:bg-slate-800 dark:text-sky-300 border-blue-200/80 dark:border-slate-700'
                         }`}
                     >
-                      {isPriv ? 'Private' : 'Public'}
+                      {isPriv ? (language === 'ar' ? 'خاص' : 'Private') : (language === 'ar' ? 'عام' : 'Public')}
                     </span>
                   </div>
                 </div>
 
-                {/* Compact Bottom Bar (Metadata + Quick Action Buttons) */}
-                <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px]">
-                  <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-semibold min-w-0 flex-1">
+                {/* Compact Row 2: Distance & Subcategory/Address + Icon Action Buttons */}
+                <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[10px]">
+                  {/* Left: Distance & Location Metadata */}
+                  <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-semibold min-w-0 flex-1 truncate">
                     <span className="flex items-center gap-0.5 text-geovision-blue dark:text-sky-300 font-black shrink-0">
-                      <MapPin className="w-3 h-3" />
+                      <MapPin className="w-2.5 h-2.5 shrink-0" />
                       <span>{dist} km</span>
                     </span>
-                    <span className="text-slate-300 dark:text-slate-700">•</span>
-                    <span className="truncate text-slate-600 dark:text-slate-300 font-bold min-w-0">
-                      {language === 'ar' ? (feat.openStatusAr || feat.openStatusEn || 'مفتوح') : (feat.openStatusEn || 'Open 24/7')}
+                    <span className="text-slate-300 dark:text-slate-700 shrink-0">•</span>
+                    <span className="truncate text-slate-600 dark:text-slate-300 font-medium min-w-0">
+                      {feat.subcategory || feat.category}
+                    </span>
+                    <span className="text-slate-300 dark:text-slate-700 shrink-0">•</span>
+                    <span className="truncate text-slate-400 dark:text-slate-400 font-normal min-w-0">
+                      {feat.addressEn || feat.addressAr || (language === 'ar' ? feat.openStatusAr || 'مفتوح 24/7' : feat.openStatusEn || 'Open 24/7')}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0 flex-wrap">
-
+                  {/* Right: Icon-Only Quick Action Buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* 1. Map Zoom/Focus */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1373,15 +1423,16 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         setSelectedFeature(feat);
                         setMapCenterAndZoom([feat.lat, feat.lng], 16);
                         if (currentView !== 'map') setCurrentView('map');
-                        showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
+                        showToast(language === 'ar' ? `تكبير على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
                       }}
-                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-all cursor-pointer text-[9.5px] font-extrabold"
-                      title={language === 'ar' ? 'التركيز على الخريطة' : 'Focus on map'}
+                      className="w-6 h-6 rounded-md bg-blue-50/80 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                      title={language === 'ar' ? 'تكبير والتركيز على الخريطة' : 'Zoom to Location'}
+                      aria-label={language === 'ar' ? 'تكبير والتركيز على الخريطة' : 'Zoom to Location'}
                     >
-                      <ZoomIn className="w-2.5 h-2.5" />
-                      <span>{language === 'ar' ? 'خريطة' : 'Map'}</span>
+                      <ZoomIn className="w-3 h-3" />
                     </button>
 
+                    {/* 2. Route Directions */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1397,16 +1448,17 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                           if (appState.setNavigationTarget) appState.setNavigationTarget(feat);
                         }
                       }}
-                      className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9.5px] font-extrabold transition-all cursor-pointer ${expandedDirectionsId === feat.id
-                        ? 'bg-geovision-blue text-white border-blue-600'
-                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white'
+                      className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${expandedDirectionsId === feat.id
+                        ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
+                        : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
                         }`}
-                      title={language === 'ar' ? 'الاتجاهات' : 'Directions'}
+                      title={language === 'ar' ? 'الاتجاهات والمسار' : 'Directions & Route'}
+                      aria-label={language === 'ar' ? 'الاتجاهات والمسار' : 'Directions & Route'}
                     >
-                      <Navigation className="w-2.5 h-2.5" />
-                      <span>{language === 'ar' ? 'مسار' : 'Route'}</span>
+                      <Navigation className="w-3 h-3" />
                     </button>
 
+                    {/* 3. Favorite Bookmark */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1430,304 +1482,148 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                           });
                         }
                       }}
-                      className={`p-1 rounded-md border transition-all cursor-pointer ${isFav
-                        ? 'bg-geovision-blue text-white border-blue-600 shadow-sm'
-                        : 'bg-blue-50 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-blue-100 dark:hover:bg-slate-700'
+                      className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${isFav
+                        ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
+                        : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-blue-100 dark:hover:bg-slate-700'
                         }`}
-                      title={isFav ? 'Favorite' : 'Add to favorite'}
+                      title={isFav ? (language === 'ar' ? 'إزالة من المفضلة' : 'Remove Favorite') : (language === 'ar' ? 'إضافة للمفضلة' : 'Save Favorite')}
+                      aria-label={isFav ? 'Remove Favorite' : 'Save Favorite'}
                     >
                       <Bookmark className={`w-3 h-3 ${isFav ? 'fill-white text-white' : 'text-geovision-blue dark:text-sky-300'}`} />
                     </button>
 
+                    {/* 4. Details Info - Expands Inline Accordion */}
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
-                        if (onViewDetails) {
-                          onViewDetails(feat);
-                        } else {
-                          setExpandedDirectionsId(null);
-                        }
+                        panToMapLocation([feat.lat, feat.lng]);
+                        setExpandedDirectionsId(null);
+                        setExpandedAccordionId(prev => prev === feat.id ? null : feat.id);
                       }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-extrabold transition-all cursor-pointer bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white"
-                      title={language === 'ar' ? 'التفاصيل' : 'Details'}
+                      className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                        expandedAccordionId === feat.id
+                          ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
+                          : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
+                      }`}
+                      title={expandedAccordionId === feat.id ? (language === 'ar' ? 'إغلاق الملخص' : 'Collapse Summary') : (language === 'ar' ? 'عرض الملخص' : 'Spatial Summary')}
+                      aria-label={expandedAccordionId === feat.id ? 'Collapse Summary' : 'Spatial Summary'}
                     >
                       <Info className="w-3 h-3" />
-                      <span>{language === 'ar' ? 'التفاصيل' : 'Details'}</span>
                     </button>
                   </div>
                 </div>
 
-                {/* ================= INLINE 4-TAB DETAILS CONTAINER ================= */}
-                {expandedDetailsId === feat.id && (
+                {/* ================= INLINE SPATIAL INTELLIGENCE SUMMARY ACCORDION ================= */}
+                {expandedAccordionId === feat.id && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-2.5 animate-in fade-in duration-200 shadow-inner"
+                    className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2 animate-in fade-in duration-200"
                   >
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center gap-1.5 text-xs font-black text-geovision-blue dark:text-blue-300">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{language === 'ar' ? 'التحليل المكاني التفصيلي' : 'Detailed Spatial Analysis'}</span>
+                    {/* Header: SPATIAL INTELLIGENCE SUMMARY + Collapse Button */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[10.5px] font-black tracking-wide text-geovision-blue dark:text-sky-300 uppercase">
+                        <Sparkles className="w-3 h-3 text-geovision-blue dark:text-sky-400 shrink-0" />
+                        <span>{language === 'ar' ? 'ملخص التحليل المكاني' : 'Spatial Intelligence Summary'}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setExpandedDetailsId(null)}
-                        className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors"
+                        onClick={() => setExpandedAccordionId(null)}
+                        className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        title={language === 'ar' ? 'إغلاق الملخص' : 'Collapse Summary'}
+                        aria-label="Collapse Summary"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
 
-                    {/* 3 Interactive Tabs Grid */}
-                    <div className="grid grid-cols-3 gap-1 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setActiveInlineTab('overview')}
-                        className={`py-1.5 px-2 rounded-lg text-[10.5px] font-black transition-all flex items-center justify-center gap-1.5 min-w-0 ${activeInlineTab === 'overview'
-                          ? 'bg-geovision-blue text-white shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                      >
-                        <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{language === 'ar' ? 'نظرة عامة' : 'Overview'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveInlineTab('nearby')}
-                        className={`py-1.5 px-2 rounded-lg text-[10.5px] font-black transition-all flex items-center justify-center gap-1.5 min-w-0 ${activeInlineTab === 'nearby'
-                          ? 'bg-geovision-blue text-white shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                      >
-                        <Compass className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{language === 'ar' ? 'القريبة' : 'Nearby'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveInlineTab('details')}
-                        className={`py-1.5 px-2 rounded-lg text-[10.5px] font-black transition-all flex items-center justify-center gap-1.5 min-w-0 ${activeInlineTab === 'details'
-                          ? 'bg-geovision-blue text-white shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                      >
-                        <FileText className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{language === 'ar' ? 'الخصائص' : 'Details'}</span>
-                      </button>
+                    {/* Concise 2-4 Line Facility Summary */}
+                    <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium bg-slate-50/80 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                      {language === 'ar'
+                        ? `يعتبر ${feat.nameAr || feat.nameEn} من المنشآت المعتمدة ضمن فئة ${feat.category} في إمارة أبوظبي. المنشأة موثقة مكانياً في الفهرس الجغرافي SDI مع توفر البيانات التشغيلية والموقع الجغرافي الدقيق.`
+                        : `${feat.nameEn} is a certified facility within Abu Dhabi's ${feat.category} spatial layer, fully verified in the SDI catalog with active operational status and verified geographic coordinates.`}
+                    </p>
+
+                    {/* Key Information 2x2 Clean Grid */}
+                    <div className="grid grid-cols-2 gap-1.5 text-[10.5px]">
+                      {/* 1. Address */}
+                      <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1.5 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                            {language === 'ar' ? 'العنوان' : 'Address'}
+                          </span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight block">
+                            {language === 'ar' ? (feat.addressAr || `${feat.nameAr}، أبوظبي`) : (feat.addressEn || `${feat.nameEn}, Abu Dhabi`)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 2. Working Hours */}
+                      <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1.5 min-w-0">
+                        <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                            {language === 'ar' ? 'أوقات العمل' : 'Working Hours'}
+                          </span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 truncate leading-tight block">
+                            {language === 'ar' ? (feat.openStatusAr || 'مفتوح 24/7') : (feat.openStatusEn || 'Open 24/7')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3. Contact Phone */}
+                      <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1.5 min-w-0">
+                        <Phone className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                            {language === 'ar' ? 'الاتصال' : 'Contact'}
+                          </span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate leading-tight block">
+                            {feat.phone || '+971 2 800 555'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 4. Coordinates */}
+                      <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1.5 min-w-0">
+                        <Compass className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                            {language === 'ar' ? 'الإحداثيات' : 'Coordinates'}
+                          </span>
+                          <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight block">
+                            {feat.lat.toFixed(4)}°N, {feat.lng.toFixed(4)}°E
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Tab 1: OVERVIEW */}
-                    {activeInlineTab === 'overview' && (
-                      <div className="space-y-3 text-xs">
-                        <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                          {language === 'ar'
-                            ? `يعتبر ${feat.nameAr} من المعالم والمرافق الرئيسية في إمارة أبوظبي ضمن فئة ${feat.category}. البيانات موثوقة مكانياً في الفهرس الجغرافي SDI.`
-                            : `${feat.nameEn} represents a key facility within Abu Dhabi's ${feat.category} spatial layer, fully verified in the SDI catalog.`}
-                        </p>
-
-                        {/* Complete Detailed Metadata & Popup Fields */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {/* Full Address */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'العنوان الفعلي' : 'Physical Address'}
-                              </span>
-                              <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] leading-snug block">
-                                {language === 'ar' ? (feat.addressAr || `${feat.nameAr}، أبوظبي، الإمارات`) : (feat.addressEn || `${feat.nameEn}, Abu Dhabi, UAE`)}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Contact Phone */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <Phone className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'الهاتف / التواصل' : 'Contact Phone'}
-                              </span>
-                              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-[11px] block">
-                                {feat.phone || '+971 2 800 555'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Operational Status & Hours */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'أوقات العمل' : 'Working Hours'}
-                              </span>
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] block">
-                                {language === 'ar' ? (feat.openStatusAr || 'مفتوح 24/7 (على مدار الساعة)') : (feat.openStatusEn || 'Open 24/7 (Round the Clock)')}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Sector / Governance */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <Building className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'القطاع والنوع' : 'Sector & Entity Type'}
-                              </span>
-                              <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] block">
-                                {isPriv
-                                  ? (language === 'ar' ? 'قطاع خاص معتمد' : 'Authorized Private Entity')
-                                  : (language === 'ar' ? 'قطاع حكومي / عام' : 'Public / Government Sector')}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* SDI Certification & Trust Level */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <ShieldCheck className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'اعتماد SDI الجغرافي' : 'SDI Spatial Certification'}
-                              </span>
-                              <span className="font-bold text-purple-600 dark:text-purple-400 text-[11px] block">
-                                {feat.isAuthoritative
-                                  ? (language === 'ar' ? 'معلم جغرافي رسمي موثوق (Tier-1)' : 'Verified SDI Authoritative Tier-1')
-                                  : (language === 'ar' ? 'طبقة جغرافية قياسية' : 'Standard SDI Spatial Layer')}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Precise Geographic Coordinates */}
-                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                            <Compass className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">
-                                {language === 'ar' ? 'الإحداثيات الجغرافية' : 'Geographic Coords'}
-                              </span>
-                              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-[11px] block">
-                                {feat.lat.toFixed(5)}°N, {feat.lng.toFixed(5)}°E
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* KPI Metric Summary Strip */}
-                        <div className="grid grid-cols-3 gap-2 pt-1">
-                          <div className="p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 text-center">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">{language === 'ar' ? 'المسافة الحالية' : 'Distance'}</span>
-                            <span className="font-black text-geovision-blue dark:text-blue-300 text-xs">{dist} km</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/80 text-center">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">{language === 'ar' ? 'التقييم SDI' : 'Rating'}</span>
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-xs">⭐ {feat.rating || 4.8} / 5.0</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 text-center">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">{language === 'ar' ? 'التصنيف' : 'Category'}</span>
-                            <span className="font-black text-emerald-700 dark:text-emerald-300 text-xs truncate block">{feat.category}</span>
-                          </div>
-                        </div>
+                    {/* Footer: SDI Status Badge + Prominent "More Details →" Button */}
+                    <div className="pt-1 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1 text-[9.5px] font-bold text-slate-400">
+                        <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />
+                        <span>{feat.isAuthoritative ? (language === 'ar' ? 'معتمد رسمي (SDI)' : 'SDI Authoritative') : (language === 'ar' ? 'طبقة جغرافية موثقة' : 'Verified Layer')}</span>
                       </div>
-                    )}
 
-                    {/* Tab 2: NEARBY */}
-                    {activeInlineTab === 'nearby' && (
-                      <div className="space-y-3 text-xs">
-                        <div className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                          <span className="font-bold text-slate-600 dark:text-slate-300 text-[11px]">{language === 'ar' ? 'نطاق البحث القريب:' : 'Proximity Radius:'}</span>
-                          <div className="flex gap-1">
-                            {[1, 3, 5, 10].map((r) => (
-                              <button
-                                key={r}
-                                type="button"
-                                onClick={() => setNearbyRadiusKm(r)}
-                                className={`px-2 py-0.5 rounded-lg font-black text-[10px] transition-all ${nearbyRadiusKm === r
-                                  ? 'bg-geovision-blue text-white shadow-2xs'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                                  }`}
-                              >
-                                {r} km
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                          {GEO_FEATURES.filter(f => f.id !== feat.id)
-                            .map(f => {
-                              const dLat = ((f.lat - feat.lat) * Math.PI) / 180;
-                              const dLon = ((f.lng - feat.lng) * Math.PI) / 180;
-                              const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos((feat.lat * Math.PI) / 180) * Math.cos((f.lat * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                              const itemDist = Math.round(6371 * c * 10) / 10;
-                              return { ...f, itemDist };
-                            })
-                            .filter(f => f.itemDist <= nearbyRadiusKm)
-                            .sort((a, b) => a.itemDist - b.itemDist)
-                            .slice(0, 5)
-                            .map((nearItem) => (
-                              <div
-                                key={nearItem.id}
-                                onClick={() => {
-                                  setSelectedFeature(nearItem);
-                                  setMapCenterAndZoom([nearItem.lat, nearItem.lng], 16);
-                                }}
-                                className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-geovision-blue cursor-pointer transition-all shadow-2xs"
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-black text-slate-900 dark:text-white truncate text-xs">{language === 'ar' ? nearItem.nameAr : nearItem.nameEn}</div>
-                                  <div className="text-[10px] text-slate-400 truncate">{nearItem.subcategory} • {nearItem.addressEn || nearItem.addressAr}</div>
-                                </div>
-                                <span className="text-[10px] font-black text-geovision-blue dark:text-blue-300 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 shrink-0">
-                                  {nearItem.itemDist} km
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tab 3: DETAILS */}
-                    {activeInlineTab === 'details' && (
-                      <div className="space-y-3 text-xs">
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-                          <table className="w-full text-[11px] text-left rtl:text-right">
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                              <tr className="bg-slate-50/50 dark:bg-slate-800/40">
-                                <td className="px-3 py-1.5 font-extrabold text-slate-500 w-1/3">Feature ID</td>
-                                <td className="px-3 py-1.5 font-mono font-bold text-slate-900 dark:text-white">{feat.id}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-1.5 font-extrabold text-slate-500">Category / Sub</td>
-                                <td className="px-3 py-1.5 font-bold text-slate-900 dark:text-white">{feat.category} / {feat.subcategory}</td>
-                              </tr>
-                              <tr className="bg-slate-50/50 dark:bg-slate-800/40">
-                                <td className="px-3 py-1.5 font-extrabold text-slate-500">Coordinates</td>
-                                <td className="px-3 py-1.5 font-mono font-bold text-slate-900 dark:text-white">Lat: {feat.lat.toFixed(4)} N, Lng: {feat.lng.toFixed(4)} E</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-1.5 font-extrabold text-slate-500">Grid Datum</td>
-                                <td className="px-3 py-1.5 font-mono font-bold text-slate-900 dark:text-white">UTM Zone 39N (EPSG:4326)</td>
-                              </tr>
-                              {feat.phone && (
-                                <tr className="bg-slate-50/50 dark:bg-slate-800/40">
-                                  <td className="px-3 py-1.5 font-extrabold text-slate-500">Phone</td>
-                                  <td className="px-3 py-1.5 font-bold text-geovision-blue">{feat.phone}</td>
-                                </tr>
-                              )}
-                              {feat.metadata && Object.entries(feat.metadata).map(([k, v]) => (
-                                <tr key={k}>
-                                  <td className="px-3 py-1.5 font-extrabold text-slate-500">{k}</td>
-                                  <td className="px-3 py-1.5 font-bold text-slate-900 dark:text-white">{String(v)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFeature(feat);
+                          if (onViewDetails) {
+                            onViewDetails(feat);
+                          } else {
+                            setExpandedDetailsId(feat.id);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-geovision-blue hover:bg-[#063360] text-white text-[11px] font-bold transition-all cursor-pointer shadow-xs hover:shadow-md hover:shadow-blue-500/20 active:scale-95 shrink-0"
+                      >
+                        <span>{language === 'ar' ? 'المزيد من التفاصيل' : 'More Details'}</span>
+                        <ArrowRight className="w-3 h-3 rtl:rotate-180" />
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1853,12 +1749,12 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
         <div className="pt-2 flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => setVisibleCount(prev => Math.max(prev, 6) + 6)}
+            onClick={() => setVisibleCount(prev => Math.max(prev, 10) + 10)}
             className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer text-center shadow-2xs"
           >
             {language === 'ar'
-              ? `عرض المزيد (+6 من أصل ${filteredFeatures.length})`
-              : `Show Next 6 (of ${filteredFeatures.length})`}
+              ? `عرض المزيد (+10 من أصل ${filteredFeatures.length})`
+              : `Show Next 10 (of ${filteredFeatures.length})`}
           </button>
 
           <button

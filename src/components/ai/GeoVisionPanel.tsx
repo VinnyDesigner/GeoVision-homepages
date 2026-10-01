@@ -287,6 +287,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
     setGuestPromptOpen,
     showToast,
     t,
+    selectedFeature,
     setSelectedFeature,
     mapCenter,
     setMapCenterAndZoom,
@@ -308,7 +309,20 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'nearby' | 'details'>('overview');
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(3);
 
-  // Automatically open feature details page in chat when user clicks a pointer on the map
+  // When returning from full details panel, scroll chat container so the selected card is visible
+  useEffect(() => {
+    if (!activeDetailFeature && selectedFeature) {
+      setTimeout(() => {
+        const cardEl = document.getElementById(`result-card-${selectedFeature.id}`);
+        if (cardEl && chatContainerRef.current) {
+          const topDiff = cardEl.getBoundingClientRect().top - chatContainerRef.current.getBoundingClientRect().top;
+          chatContainerRef.current.scrollBy({ top: topDiff - 16, behavior: 'smooth' });
+        }
+      }, 70);
+    }
+  }, [activeDetailFeature, selectedFeature]);
+
+  // Handle map marker click: return to search results list with expanded accordion
   useEffect(() => {
     const handleOpenDetails = (e: Event) => {
       const customEvt = e as CustomEvent<GeoFeature>;
@@ -317,9 +331,14 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
         setActiveDetailTab('overview');
       }
     };
+    const handleSelectAndExpand = () => {
+      setActiveDetailFeature(null);
+    };
     window.addEventListener('geovision:openFeatureDetails', handleOpenDetails);
+    window.addEventListener('geovision:selectAndExpandFeature', handleSelectAndExpand);
     return () => {
       window.removeEventListener('geovision:openFeatureDetails', handleOpenDetails);
+      window.removeEventListener('geovision:selectAndExpandFeature', handleSelectAndExpand);
     };
   }, []);
 
@@ -596,7 +615,6 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
               type="button"
               onClick={() => {
                 setActiveDetailFeature(null);
-                setSelectedFeature(null);
               }}
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-geovision-blue hover:bg-[#063360] text-white text-xs font-black transition-all cursor-pointer shadow-md shadow-blue-500/20 active:scale-95"
             >

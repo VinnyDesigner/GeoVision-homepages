@@ -85,6 +85,7 @@ interface AppStateContextType {
   mapCenter: [number, number];
   mapZoom: number;
   setMapCenterAndZoom: (center: [number, number], zoom: number) => void;
+  panToMapLocation: (center: [number, number]) => void;
   setMapCenter: React.Dispatch<React.SetStateAction<[number, number]>>;
   setMapZoom: React.Dispatch<React.SetStateAction<number>>;
   zoomIn: () => void;
@@ -688,6 +689,11 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setMapCenter(center);
     setMapZoom(zoom);
     window.dispatchEvent(new CustomEvent('geovision:flyTo', { detail: { center, zoom } }));
+  };
+
+  const panToMapLocation = (center: [number, number]) => {
+    setMapCenter(center);
+    window.dispatchEvent(new CustomEvent('geovision:panTo', { detail: { center } }));
   };
 
   // Favorites Management
@@ -4861,6 +4867,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
         mapCenter,
         mapZoom,
         setMapCenterAndZoom,
+        panToMapLocation,
         setMapCenter,
         setMapZoom,
         zoomIn,
