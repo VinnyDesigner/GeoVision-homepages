@@ -335,8 +335,11 @@ export const MapWorkspace: React.FC = () => {
     };
     const handleFlyToEvent = (e: any) => {
       if (mapInstanceRef.current && e.detail && e.detail.center) {
+        if (flyToTimeoutRef.current) {
+          clearTimeout(flyToTimeoutRef.current);
+        }
         mapInstanceRef.current.invalidateSize();
-        mapInstanceRef.current.flyTo(e.detail.center, e.detail.zoom || 16, { animate: true, duration: 1.4 });
+        mapInstanceRef.current.flyTo(e.detail.center, e.detail.zoom || 16, { animate: true, duration: 1.2 });
       }
     };
 
@@ -409,6 +412,9 @@ export const MapWorkspace: React.FC = () => {
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         setSelectedFeature(feat);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([feat.lat, feat.lng], 16, { animate: true, duration: 1.2 });
+        }
         setAiPanelOpen(true);
         window.dispatchEvent(new CustomEvent('geovision:openFeatureDetails', { detail: feat }));
       });
@@ -522,6 +528,9 @@ export const MapWorkspace: React.FC = () => {
         const destination: [number, number] = [selectedFeature.lat, selectedFeature.lng];
         const routeBounds = L.latLngBounds([origin, destination]);
         mapInst.flyToBounds(routeBounds, { padding: [90, 90], maxZoom: 15, duration: 1.2 });
+      } else if (selectedFeature) {
+        // When a card or feature is selected, zoom and pan smoothly to that particular location!
+        mapInst.flyTo([selectedFeature.lat, selectedFeature.lng], 16, { animate: true, duration: 1.2 });
       } else if (displayFeatures.length > 0) {
         // Collect ALL coordinates for pointers AND location boundary polygon to ensure zoom out effect frames EVERYTHING at once
         const allPoints: [number, number][] = [];
@@ -558,8 +567,6 @@ export const MapWorkspace: React.FC = () => {
             });
           }
         }
-      } else if (selectedFeature) {
-        mapInst.flyTo([selectedFeature.lat, selectedFeature.lng], 15, { animate: true, duration: 0.8 });
       }
     }, 25);
 

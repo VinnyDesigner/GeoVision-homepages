@@ -789,6 +789,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (!isNavRequest) {
       setNavigationTarget(null);
     }
+    setSelectedFeature(null);
 
     const isBufferRequest =
       lowerQ.includes('buffer') ||

@@ -1030,7 +1030,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
                       </div>
                     )}
 
-                    <div className="w-full p-3 sm:p-3.5 rounded-2xl bg-geovision-blue text-white text-[13px] sm:text-[13.5px] font-medium shadow-md shadow-blue-500/20 rounded-tr-none break-words leading-relaxed">
+                    <div className="w-full p-2.5 sm:p-3 rounded-2xl bg-geovision-blue text-white text-[13px] sm:text-[13.5px] font-medium shadow-md shadow-blue-500/20 rounded-tr-none break-words leading-normal">
                       {textToDisplay}
                     </div>
                   </div>
@@ -1056,7 +1056,7 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
               </div>
 
               {/* AI Response Bubble */}
-              <div className="max-w-[95%] sm:max-w-[92%] p-3.5 sm:p-4 rounded-2xl shadow-xs bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 rounded-tl-none border border-slate-200/80 dark:border-slate-800 space-y-3 break-words">
+              <div className="max-w-[95%] sm:max-w-[92%] p-3 sm:p-3.5 rounded-2xl shadow-xs bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 rounded-tl-none border border-slate-200/80 dark:border-slate-800 space-y-2.5 break-words">
                 
                 {/* Main Text Response — Structured Formatted Typography */}
                 <FormattedMessageText
@@ -1075,21 +1075,21 @@ export const GeoVisionPanel: React.FC<GeoVisionPanelProps> = ({
 
                 {/* Recommendations Section */}
                 {!msg.noResultsSuggestions && !msg.disambiguationOptions && ((isMsgAr ? msg.recommendationsAr : msg.recommendationsEn) || []).length > 0 && (
-                  <div className="space-y-2.5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 mt-3">
-                    <p className="text-[12.5px] sm:text-[13px] font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
+                  <div className="space-y-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 mt-2.5">
+                    <p className="text-xs sm:text-[12.5px] font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5 leading-normal">
                       <Sparkles className="w-3.5 h-3.5 text-geovision-blue dark:text-sky-400 shrink-0" />
                       <span>{t('ai.recommendationsTitle')}</span>
                     </p>
 
-                    <div className="space-y-2 sm:space-y-2.5">
+                    <div className="space-y-1.5">
                       {(isMsgAr ? msg.recommendationsAr : msg.recommendationsEn)?.map((recText, idx) => (
                         <button
                           key={idx}
                           onClick={() => sendAIMessage(recText)}
-                          className="w-full flex items-center justify-between p-3 px-3.5 rounded-xl bg-slate-50/80 hover:bg-blue-50/80 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-800 hover:text-geovision-blue dark:text-slate-100 dark:hover:text-white font-medium border border-slate-200/90 hover:border-blue-300 dark:border-slate-700/80 dark:hover:border-slate-600 text-[12.5px] sm:text-[13px] text-left rtl:text-right transition-all cursor-pointer shadow-2xs hover:shadow-xs gap-2.5 min-w-0 group"
+                          className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50/80 hover:bg-blue-50/80 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-800 hover:text-geovision-blue dark:text-slate-100 dark:hover:text-white font-medium border border-slate-200/90 hover:border-blue-300 dark:border-slate-700/80 dark:hover:border-slate-600 text-xs sm:text-[12.5px] text-left rtl:text-right transition-all cursor-pointer shadow-2xs hover:shadow-xs gap-2 min-w-0 group"
                         >
-                          <span className="flex-1 text-slate-800 group-hover:text-geovision-blue dark:text-slate-100 dark:group-hover:text-white font-medium leading-snug">{recText}</span>
-                          <ChevronRight className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-geovision-blue dark:text-slate-500 dark:group-hover:text-sky-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all" />
+                          <span className="flex-1 text-slate-800 group-hover:text-geovision-blue dark:text-slate-100 dark:group-hover:text-white font-medium leading-normal">{recText}</span>
+                          <ChevronRight className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-geovision-blue dark:text-slate-500 dark:group-hover:text-sky-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all" />
                         </button>
                       ))}
                     </div>

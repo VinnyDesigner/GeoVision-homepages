@@ -3,7 +3,6 @@ import type { GeoFeature } from '../../types';
 import { useAppState } from '../../context/AppStateContext';
 import {
   ExternalLink,
-  ChevronDown,
   Check,
   Building,
   Building2,
@@ -19,7 +18,6 @@ import {
   Layers,
   ZoomIn,
   Info,
-  RotateCcw,
   X,
   Navigation,
   Printer,
@@ -262,8 +260,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   }, [baseFeatures]);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => initialFeatureCategories);
-  const [selectedType, setSelectedType] = useState<'all' | 'private' | 'public'>('all');
-  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
   const [visibleCount, setVisibleCount] = useState(6);
 
@@ -279,7 +275,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   const [printTemplate, setPrintTemplate] = useState<'briefing' | 'ledger' | 'map'>('briefing');
   const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
 
-  const typeRef = useRef<HTMLDivElement>(null);
   const featureListRef = useRef<HTMLDivElement>(null);
 
   const setGuestPromptOpen = appState.setGuestPromptOpen;
@@ -296,18 +291,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
     if (featureListRef.current) {
       featureListRef.current.scrollTop = 0;
     }
-  }, [selectedCategories, selectedType, searchFilter]);
-
-  // Close menus when clicking anywhere outside of their respective containers
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (typeRef.current && !typeRef.current.contains(e.target as Node)) {
-        setTypeMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [selectedCategories, searchFilter]);
 
   const handleExportCSV = () => {
     if (!filteredFeatures || filteredFeatures.length === 0) return;
@@ -382,10 +366,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
       if (!isCategoryMatched) return false;
     }
 
-    const isPriv = isFeaturePrivate(feat);
-    if (selectedType === 'private' && !isPriv) return false;
-    if (selectedType === 'public' && isPriv) return false;
-
     if (searchFilter.trim()) {
       const q = searchFilter.toLowerCase();
       const matchName = (feat.nameEn || '').toLowerCase().includes(q) || (feat.nameAr || '').includes(q);
@@ -398,14 +378,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
     return true;
   });
 
-  const getTypeButtonLabel = () => {
-    if (selectedType === 'all') return language === 'ar' ? 'جميع الأنواع' : 'All Types';
-    if (selectedType === 'private') return language === 'ar' ? 'خاص' : 'Private';
-    return language === 'ar' ? 'عام' : 'Public';
-  };
-
-  const isTypeActive = selectedType !== 'all';
-  const hasActiveFilters = isTypeActive || searchFilter.trim() !== '';
   const isHighVolume = features.length >= 100 || filteredFeatures.length > 20;
 
   // If cards count is >= 100 (or in general high volume list), adjust to show at least 6 cards
@@ -418,16 +390,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
       setVisibleCount(6);
     }
   }, [features.length, filteredFeatures.length]);
-
-  const handleClearFilters = () => {
-    setSearchFilter('');
-    setSelectedCategories(initialFeatureCategories);
-    setSelectedType('all');
-    if (appState.setSelectedCategoryIds) {
-      appState.setSelectedCategoryIds([]);
-    }
-    showToast(language === 'ar' ? 'تمت إعادة تعيين الفلاتر' : 'All filters reset');
-  };
 
   // Analytics Computation
   const categoryCounts = filteredFeatures.reduce((acc, f) => {
@@ -828,7 +790,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedFeature(detailFeat);
-                      setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 15);
+                      setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 16);
                       setExpandedDirectionsId(detailFeat.id);
                     }}
                     className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 shadow-2xs cursor-pointer transition-all"
@@ -878,7 +840,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         key={nearItem.id}
                         onClick={() => {
                           setSelectedFeature(nearItem);
-                          setMapCenterAndZoom([nearItem.lat, nearItem.lng], 15);
+                          setMapCenterAndZoom([nearItem.lat, nearItem.lng], 16);
                         }}
                         className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-geovision-blue cursor-pointer transition-all shadow-2xs"
                       >
@@ -941,11 +903,11 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   }
 
   return (
-    <div className="mt-3.5 space-y-2.5 pt-3 border-t border-slate-200/80 dark:border-slate-700/80">
+    <div className="mt-2.5 space-y-2 pt-2 border-t border-slate-200/80 dark:border-slate-700/80 text-xs sm:text-[12.5px] leading-normal">
 
       {/* High-Volume Banner */}
       {isHighVolume && (
-        <div className="p-2.5 rounded-xl bg-blue-50/90 dark:bg-slate-900 border border-blue-200/80 dark:border-slate-700 flex items-center justify-between gap-2 text-[11px] font-extrabold text-geovision-blue dark:text-blue-300">
+        <div className="p-2 rounded-xl bg-blue-50/90 dark:bg-slate-900 border border-blue-200/80 dark:border-slate-700 flex items-center justify-between gap-2 text-[11px] font-extrabold text-geovision-blue dark:text-blue-300">
           <div className="flex items-center gap-1.5 min-w-0">
             <Layers className="w-4 h-4 shrink-0 text-geovision-blue" />
             <span className="truncate">
@@ -962,7 +924,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
 
       {/* Header Bar with Action Buttons (Title, Analytics, Print, Export CSV) */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+        <h4 className="text-xs sm:text-[13px] font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-normal">
           <span>{language === 'ar' ? 'نتائج البحث' : 'Search Results'}</span>
           <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-slate-800 text-geovision-blue dark:text-blue-300 text-xs font-black">
             {filteredFeatures.length}
@@ -1003,73 +965,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
         </div>
       </div>
 
-      {/* Control Bar: Filters & Quick Search Input (Single Horizontal Flex Row) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
-
-        {/* Left Controls: Type Dropdown + Clear Filters Button */}
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
-          {/* Type Filter Dropdown */}
-          <div className="relative flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" ref={typeRef}>
-            <span className="shrink-0">{language === 'ar' ? 'النوع:' : 'Type:'}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setTypeMenuOpen(!typeMenuOpen);
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold whitespace-nowrap transition-all cursor-pointer shadow-2xs ${typeMenuOpen || isTypeActive
-                ? 'bg-geovision-blue text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-400/20'
-                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 hover:border-geovision-blue'
-                }`}
-            >
-              <span>{getTypeButtonLabel()}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${typeMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {typeMenuOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-44 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 space-y-1">
-                {[
-                  { id: 'all', label: language === 'ar' ? 'جميع الأنواع' : 'All Types' },
-                  { id: 'private', label: language === 'ar' ? 'خاص' : 'Private' },
-                  { id: 'public', label: language === 'ar' ? 'عام' : 'Public' },
-                ].map((opt) => {
-                  const isSel = selectedType === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedType(opt.id as any);
-                        setTypeMenuOpen(false);
-                      }}
-                      className={`w-full text-left rtl:text-right px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSel
-                        ? 'bg-geovision-blue text-white shadow-md shadow-blue-500/25 font-black'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 font-bold'
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Clear Filters Button */}
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-[#215A9E] hover:text-white border border-slate-200 dark:border-slate-700 text-[10px] font-black transition-all cursor-pointer shadow-2xs"
-              title={language === 'ar' ? 'إعادة تعيين الفلاتر' : 'Reset all filters'}
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>{language === 'ar' ? 'مسح الفلاتر' : 'Clear Filters'}</span>
-            </button>
-          )}
-        </div>
-
-        {/* Right Controls: Filter Results Search Input */}
-        <div className="relative flex-1 min-w-[140px] max-w-[200px]">
+      {/* Control Bar: Filter Results Search Input */}
+      <div className="p-1.5 sm:p-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
+        <div className="relative w-full">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 rtl:right-2.5 rtl:left-auto" />
           <input
             type="text"
@@ -1088,7 +986,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </button>
           )}
         </div>
-
       </div>
 
       {/* Feature Cards List OR Navigated Detail Page */}
@@ -1220,7 +1117,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
               {/* TAB 1: OVERVIEW */}
               {activeInlineTab === 'overview' && (
                 <div className="space-y-3.5 text-xs">
-                  <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+                  <p className="text-slate-700 dark:text-slate-300 font-medium leading-normal bg-slate-50 dark:bg-slate-800/60 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 text-xs sm:text-[12.5px]">
                     {language === 'ar'
                       ? `يعتبر ${detailFeat.nameAr} من المعالم والمرافق الرئيسية في إمارة أبوظبي ضمن فئة ${detailFeat.category}. البيانات موثوقة مكانياً في الفهرس الجغرافي SDI.`
                       : `${detailFeat.nameEn} represents a key facility within Abu Dhabi's ${detailFeat.category} spatial layer, fully verified in the SDI catalog.`}
@@ -1278,7 +1175,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       type="button"
                       onClick={() => {
                         setSelectedFeature(detailFeat);
-                        setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 15);
+                        setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 16);
                         setExpandedDirectionsId(detailFeat.id);
                       }}
                       className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 shadow-2xs cursor-pointer transition-all"
@@ -1328,7 +1225,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                           key={nearItem.id}
                           onClick={() => {
                             setSelectedFeature(nearItem);
-                            setMapCenterAndZoom([nearItem.lat, nearItem.lng], 15);
+                            setMapCenterAndZoom([nearItem.lat, nearItem.lng], 16);
                           }}
                           className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-geovision-blue cursor-pointer transition-all shadow-2xs"
                         >
@@ -1409,8 +1306,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                 onMouseLeave={() => setHoveredFeature && setHoveredFeature(null)}
                 onClick={() => {
                   setSelectedFeature(feat);
-                  setMapCenterAndZoom([feat.lat, feat.lng], 15);
+                  setMapCenterAndZoom([feat.lat, feat.lng], 16);
                   if (currentView !== 'map') setCurrentView('map');
+                  showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
                 }}
                 className={`relative rounded-xl bg-white dark:bg-slate-900 border ${isHovered || isSelected ? 'border-geovision-blue dark:border-blue-400 ring-2 ring-blue-500/30' : 'border-slate-200/90 dark:border-slate-800'
                   } hover:border-geovision-blue dark:hover:border-blue-500 cursor-pointer transition-all duration-200 p-2 sm:p-2.5 space-y-1.5 shadow-2xs hover:shadow-md hover:shadow-blue-500/10 group overflow-hidden`}
@@ -1473,9 +1371,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 15);
+                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
                         if (currentView !== 'map') setCurrentView('map');
-                        showToast(language === 'ar' ? `التركيز على ${feat.nameAr}` : `Zoomed to ${feat.nameEn}`);
+                        showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
                       }}
                       className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-all cursor-pointer text-[9.5px] font-extrabold"
                       title={language === 'ar' ? 'التركيز على الخريطة' : 'Focus on map'}
@@ -1489,7 +1387,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 15);
+                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
                         if (expandedDirectionsId === feat.id) {
                           setExpandedDirectionsId(null);
                           if (appState.setNavigationTarget) appState.setNavigationTarget(null);
@@ -1546,7 +1444,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 15);
+                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
                         if (onViewDetails) {
                           onViewDetails(feat);
                         } else {
@@ -1772,7 +1670,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                                 key={nearItem.id}
                                 onClick={() => {
                                   setSelectedFeature(nearItem);
-                                  setMapCenterAndZoom([nearItem.lat, nearItem.lng], 15);
+                                  setMapCenterAndZoom([nearItem.lat, nearItem.lng], 16);
                                 }}
                                 className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-geovision-blue cursor-pointer transition-all shadow-2xs"
                               >
@@ -1932,7 +1830,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         type="button"
                         onClick={() => {
                           setSelectedFeature(feat);
-                          setMapCenterAndZoom([feat.lat, feat.lng], 15);
+                          setMapCenterAndZoom([feat.lat, feat.lng], 16);
                           if (currentView !== 'map') setCurrentView('map');
                           showToast(language === 'ar' ? `تم تركيز المسار على الخريطة` : `Route focused on map workspace`);
                         }}
@@ -2700,7 +2598,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setMapCenterAndZoom([activeRouteTarget.lat, activeRouteTarget.lng], 15);
+                  setMapCenterAndZoom([activeRouteTarget.lat, activeRouteTarget.lng], 16);
                   setSelectedFeature(activeRouteTarget);
                   if (currentView !== 'map') setCurrentView('map');
                   setActiveRouteTarget(null);
