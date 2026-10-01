@@ -119,6 +119,9 @@ interface AppStateContextType {
   setPureMapMode: (pure: boolean) => void;
   navigationTarget: GeoFeature | null;
   setNavigationTarget: (feature: GeoFeature | null) => void;
+  activeChatAccordion: { featureId: string; type: 'summary' | 'directions' } | null;
+  setActiveChatAccordion: React.Dispatch<React.SetStateAction<{ featureId: string; type: 'summary' | 'directions' } | null>>;
+  closeAllChatAccordions: () => void;
 }
 
 const DEFAULT_FILTERS: SmartFilterState = {
@@ -289,6 +292,8 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [bufferRadiusKm, setBufferRadiusKm] = useState<number>(0);
   const [bufferCenter, setBufferCenter] = useState<[number, number] | null>(null);
   const [navigationTarget, setNavigationTarget] = useState<GeoFeature | null>(null);
+  const [activeChatAccordion, setActiveChatAccordion] = useState<{ featureId: string; type: 'summary' | 'directions' } | null>(null);
+  const closeAllChatAccordions = () => setActiveChatAccordion(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -521,6 +526,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
     setSmartFilters(DEFAULT_FILTERS);
     setSelectedFeature(null);
     setNavigationTarget(null);
+    setActiveChatAccordion(null);
     setBufferRadiusKm(0);
     setBufferCenter(null);
     setUserDrawnShapes([]);
@@ -534,6 +540,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const clearAllHistory = () => {
     setConversationSessions([]);
+    setActiveChatAccordion(null);
     try {
       localStorage.removeItem('geovision_chat_sessions');
     } catch (e) { }
@@ -4938,6 +4945,9 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
         setPureMapMode,
         navigationTarget,
         setNavigationTarget,
+        activeChatAccordion,
+        setActiveChatAccordion,
+        closeAllChatAccordions,
       }}
     >
       {children}

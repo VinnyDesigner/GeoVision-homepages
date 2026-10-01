@@ -270,10 +270,68 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   const [activeRouteTarget, setActiveRouteTarget] = useState<GeoFeature | null>(null);
 
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
-  const [expandedAccordionId, setExpandedAccordionId] = useState<string | null>(null);
   const [activeInlineTab, setActiveInlineTab] = useState<'overview' | 'nearby' | 'details' | 'related'>('overview');
-  const [expandedDirectionsId, setExpandedDirectionsId] = useState<string | null>(null);
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(3);
+
+  // Single active accordion across entire chat panel (guarantees strict mutual exclusion)
+  const activeChatAccordion = appState.activeChatAccordion;
+  const setActiveChatAccordion = appState.setActiveChatAccordion;
+
+  const isSummaryAccordionExpanded = (id: string) =>
+    activeChatAccordion?.featureId === id && activeChatAccordion?.type === 'summary';
+
+  const isDirectionsAccordionExpanded = (id: string) =>
+    activeChatAccordion?.featureId === id && activeChatAccordion?.type === 'directions';
+
+  const toggleSummaryAccordion = (feat: GeoFeature) => {
+    if (isSummaryAccordionExpanded(feat.id)) {
+      setActiveChatAccordion(null);
+    } else {
+      setActiveChatAccordion({ featureId: feat.id, type: 'summary' });
+      if (appState.setNavigationTarget) appState.setNavigationTarget(null);
+
+      setTimeout(() => {
+        const cardEl = document.getElementById(`result-card-${feat.id}`);
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          const chatContainer = cardEl.closest('.overflow-y-auto') as HTMLElement | null;
+          if (chatContainer) {
+            const cardRect = cardEl.getBoundingClientRect();
+            const contRect = chatContainer.getBoundingClientRect();
+            if (cardRect.bottom > contRect.bottom - 20) {
+              chatContainer.scrollBy({ top: cardRect.bottom - contRect.bottom + 24, behavior: 'smooth' });
+            }
+          }
+        }
+      }, 150);
+    }
+  };
+
+  const toggleDirectionsAccordion = (feat: GeoFeature) => {
+    if (isDirectionsAccordionExpanded(feat.id)) {
+      setActiveChatAccordion(null);
+      if (appState.setNavigationTarget) appState.setNavigationTarget(null);
+    } else {
+      setActiveChatAccordion({ featureId: feat.id, type: 'directions' });
+      setExpandedDetailsId(null);
+      if (appState.setNavigationTarget) appState.setNavigationTarget(feat);
+
+      setTimeout(() => {
+        const cardEl = document.getElementById(`result-card-${feat.id}`);
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          const chatContainer = cardEl.closest('.overflow-y-auto') as HTMLElement | null;
+          if (chatContainer) {
+            const cardRect = cardEl.getBoundingClientRect();
+            const contRect = chatContainer.getBoundingClientRect();
+            if (cardRect.bottom > contRect.bottom - 20) {
+              chatContainer.scrollBy({ top: cardRect.bottom - contRect.bottom + 24, behavior: 'smooth' });
+            }
+          }
+        }
+      }, 150);
+    }
+  };
 
   const [printTemplate, setPrintTemplate] = useState<'briefing' | 'ledger' | 'map'>('briefing');
   const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
@@ -393,18 +451,26 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
         if (featIdx >= visibleCount) {
           setVisibleCount(featIdx + 5);
         }
-        setExpandedAccordionId(feat.id);
+        setActiveChatAccordion({ featureId: feat.id, type: 'summary' });
         setSelectedFeature(feat);
 
-        // Smoothly scroll results list container to this card without scrolling the window
+        // Smoothly bring the card and expanded accordion into the viewable area of the chat panel
         setTimeout(() => {
-          const container = featureListRef.current;
           const cardEl = document.getElementById(`result-card-${feat.id}`);
-          if (container && cardEl) {
-            const topDiff = cardEl.getBoundingClientRect().top - container.getBoundingClientRect().top;
-            container.scrollBy({ top: topDiff - 8, behavior: 'smooth' });
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const chatContainer = cardEl.closest('.overflow-y-auto') as HTMLElement | null;
+            if (chatContainer) {
+              const cardRect = cardEl.getBoundingClientRect();
+              const contRect = chatContainer.getBoundingClientRect();
+              if (cardRect.top < contRect.top + 20) {
+                chatContainer.scrollBy({ top: cardRect.top - contRect.top - 20, behavior: 'smooth' });
+              } else if (cardRect.bottom > contRect.bottom - 20) {
+                chatContainer.scrollBy({ top: cardRect.bottom - contRect.bottom + 20, behavior: 'smooth' });
+              }
+            }
           }
-        }, 60);
+        }, 120);
       }
     };
 
@@ -827,7 +893,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                     onClick={() => {
                       setSelectedFeature(detailFeat);
                       setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 16);
-                      setExpandedDirectionsId(detailFeat.id);
+                      setExpandedDetailsId(null);
+                      setActiveChatAccordion({ featureId: detailFeat.id, type: 'directions' });
+                      if (appState.setNavigationTarget) appState.setNavigationTarget(detailFeat);
                     }}
                     className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 shadow-2xs cursor-pointer transition-all"
                   >
@@ -1212,7 +1280,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={() => {
                         setSelectedFeature(detailFeat);
                         setMapCenterAndZoom([detailFeat.lat, detailFeat.lng], 16);
-                        setExpandedDirectionsId(detailFeat.id);
+                        setExpandedDetailsId(null);
+                        setActiveChatAccordion({ featureId: detailFeat.id, type: 'directions' });
+                        if (appState.setNavigationTarget) appState.setNavigationTarget(detailFeat);
                       }}
                       className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 shadow-2xs cursor-pointer transition-all"
                     >
@@ -1326,7 +1396,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
           {language === 'ar' ? 'لا توجد نتائج مطابقة للتصفية المختارة.' : 'No spatial matches found for selected category/type filter.'}
         </div>
       ) : (
-        <div ref={featureListRef} className="space-y-1.5 max-h-[560px] overflow-y-auto pr-1 scrollbar-none">
+        <div ref={featureListRef} className="space-y-1.5">
           {displayedFeatures.map((feat) => {
             const isPriv = isFeaturePrivate(feat);
             const isFav = isFavorite(feat.nameEn);
@@ -1348,11 +1418,11 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                   showToast(language === 'ar' ? `التركيز على ${feat.nameAr || feat.nameEn}` : `Focused on ${feat.nameEn}`);
                 }}
                 title={`${language === 'ar' ? feat.nameAr : feat.nameEn} — ${feat.subcategory || feat.category}`}
-                className={`relative rounded-xl bg-white dark:bg-slate-900 border ${isHovered || isSelected || expandedAccordionId === feat.id ? 'border-geovision-blue dark:border-blue-400 ring-2 ring-blue-500/30' : 'border-slate-200/90 dark:border-slate-800'
-                  } hover:border-geovision-blue dark:hover:border-blue-500 cursor-pointer transition-all duration-200 py-1.5 px-2.5 space-y-1 shadow-2xs hover:shadow-md hover:shadow-blue-500/10 group overflow-hidden`}
+                className={`relative rounded-xl bg-white dark:bg-slate-900 border ${isHovered || isSelected || isSummaryAccordionExpanded(feat.id) || isDirectionsAccordionExpanded(feat.id) ? 'border-geovision-blue dark:border-blue-400 ring-2 ring-blue-500/30' : 'border-slate-200/90 dark:border-slate-800'
+                  } hover:border-geovision-blue dark:hover:border-blue-500 cursor-pointer transition-all duration-200 py-1.5 px-2.5 space-y-1 shadow-2xs hover:shadow-md hover:shadow-blue-500/10 group`}
               >
                 {/* Top Category Accent Line */}
-                <div className={`absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r ${styleInfo.accentColor} opacity-75 group-hover:opacity-100 transition-opacity`} />
+                <div className={`absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r ${styleInfo.accentColor} opacity-75 group-hover:opacity-100 transition-opacity rounded-t-xl`} />
 
                 {/* Compact Row 1: Category Icon + Title + Badges */}
                 <div className="flex items-center justify-between gap-1.5">
@@ -1410,7 +1480,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
+                        const targetLat = typeof feat.lat === 'number' ? feat.lat : parseFloat(feat.lat);
+                        const targetLng = typeof feat.lng === 'number' ? feat.lng : parseFloat(feat.lng);
+                        setMapCenterAndZoom([targetLat, targetLng], 16);
                         if (currentView !== 'map') setCurrentView('map');
                         showToast(language === 'ar' ? `تكبير على ${feat.nameAr || feat.nameEn}` : `Zoomed to ${feat.nameEn}`);
                       }}
@@ -1427,19 +1499,13 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        if (expandedDirectionsId === feat.id) {
-                          setExpandedDirectionsId(null);
-                          if (appState.setNavigationTarget) appState.setNavigationTarget(null);
-                        } else {
-                          setExpandedDirectionsId(feat.id);
-                          setExpandedDetailsId(null);
-                          if (appState.setNavigationTarget) appState.setNavigationTarget(feat);
-                        }
+                        toggleDirectionsAccordion(feat);
                       }}
-                      className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${expandedDirectionsId === feat.id
-                        ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
-                        : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
-                        }`}
+                      className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                        isDirectionsAccordionExpanded(feat.id)
+                          ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
+                          : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
+                      }`}
                       title={language === 'ar' ? 'الاتجاهات والمسار' : 'Directions & Route'}
                       aria-label={language === 'ar' ? 'الاتجاهات والمسار' : 'Directions & Route'}
                     >
@@ -1487,16 +1553,15 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         e.stopPropagation();
                         setSelectedFeature(feat);
                         panToMapLocation([feat.lat, feat.lng]);
-                        setExpandedDirectionsId(null);
-                        setExpandedAccordionId(prev => prev === feat.id ? null : feat.id);
+                        toggleSummaryAccordion(feat);
                       }}
                       className={`w-6 h-6 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
-                        expandedAccordionId === feat.id
+                        isSummaryAccordionExpanded(feat.id)
                           ? 'bg-geovision-blue text-white border-blue-600 shadow-2xs'
                           : 'bg-blue-50/80 dark:bg-slate-800 border-blue-200/80 dark:border-slate-700 text-geovision-blue dark:text-sky-300 hover:bg-geovision-blue hover:text-white dark:hover:bg-blue-600 dark:hover:text-white'
                       }`}
-                      title={expandedAccordionId === feat.id ? (language === 'ar' ? 'إغلاق الملخص' : 'Collapse Summary') : (language === 'ar' ? 'عرض الملخص' : 'Spatial Summary')}
-                      aria-label={expandedAccordionId === feat.id ? 'Collapse Summary' : 'Spatial Summary'}
+                      title={isSummaryAccordionExpanded(feat.id) ? (language === 'ar' ? 'إغلاق الملخص' : 'Collapse Summary') : (language === 'ar' ? 'عرض الملخص' : 'Spatial Summary')}
+                      aria-label={isSummaryAccordionExpanded(feat.id) ? 'Collapse Summary' : 'Spatial Summary'}
                     >
                       <Info className="w-3 h-3" />
                     </button>
@@ -1504,7 +1569,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                 </div>
 
                 {/* ================= INLINE SPATIAL INTELLIGENCE SUMMARY ACCORDION ================= */}
-                {expandedAccordionId === feat.id && (
+                {isSummaryAccordionExpanded(feat.id) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2 animate-in fade-in duration-200"
@@ -1517,7 +1582,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setExpandedAccordionId(null)}
+                        onClick={() => setActiveChatAccordion(null)}
                         className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
                         title={language === 'ar' ? 'إغلاق الملخص' : 'Collapse Summary'}
                         aria-label="Collapse Summary"
@@ -1600,6 +1665,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedFeature(feat);
+                          setActiveChatAccordion(null);
                           if (onViewDetails) {
                             onViewDetails(feat);
                           } else {
@@ -1616,7 +1682,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                 )}
 
                 {/* ================= INLINE ROUTE DIRECTIONS CONTAINER ================= */}
-                {expandedDirectionsId === feat.id && (
+                {isDirectionsAccordionExpanded(feat.id) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     className="mt-3 p-4 rounded-2xl bg-blue-50/80 dark:bg-slate-800/90 border border-blue-200 dark:border-slate-700 space-y-3.5 animate-in fade-in duration-200 shadow-inner"
@@ -1629,7 +1695,10 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setExpandedDirectionsId(null)}
+                        onClick={() => {
+                          setActiveChatAccordion(null);
+                          if (appState.setNavigationTarget) appState.setNavigationTarget(null);
+                        }}
                         className="p-1 rounded-lg hover:bg-blue-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />

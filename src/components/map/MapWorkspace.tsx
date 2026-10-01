@@ -69,6 +69,7 @@ export const MapWorkspace: React.FC = () => {
   const [isRoutingLoading, setIsRoutingLoading] = useState(false);
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const boundaryGroupRef = useRef<L.LayerGroup | null>(null);
+  const isExplicitZoomingRef = useRef<boolean>(false);
 
 
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
@@ -346,21 +347,40 @@ export const MapWorkspace: React.FC = () => {
       }
     };
     const handleFlyToEvent = (e: any) => {
-      if (mapInstanceRef.current && e.detail && e.detail.center) {
+      const center = e.detail?.center || (typeof e.detail?.lat === 'number' && typeof e.detail?.lng === 'number' ? [e.detail.lat, e.detail.lng] : null);
+      if (mapInstanceRef.current && center) {
         if (flyToTimeoutRef.current) {
           clearTimeout(flyToTimeoutRef.current);
+          flyToTimeoutRef.current = null;
         }
+        isExplicitZoomingRef.current = true;
+        const targetZoom = Number(e.detail?.zoom) || 16;
         mapInstanceRef.current.invalidateSize();
-        mapInstanceRef.current.flyTo(e.detail.center, e.detail.zoom || 16, { animate: true, duration: 1.2 });
+        mapInstanceRef.current.flyTo(center, targetZoom, { animate: true, duration: 1.0, easeLinearity: 0.25 });
+        setMapCenter(center);
+        setMapZoom(targetZoom);
+
+        const onMoveEnd = () => {
+          isExplicitZoomingRef.current = false;
+          mapInstanceRef.current?.off('moveend', onMoveEnd);
+        };
+        mapInstanceRef.current.once('moveend', onMoveEnd);
+
+        setTimeout(() => {
+          isExplicitZoomingRef.current = false;
+        }, 1500);
       }
     };
     const handlePanToEvent = (e: any) => {
-      if (mapInstanceRef.current && e.detail && e.detail.center) {
+      const center = e.detail?.center || (typeof e.detail?.lat === 'number' && typeof e.detail?.lng === 'number' ? [e.detail.lat, e.detail.lng] : null);
+      if (mapInstanceRef.current && center) {
+        if (isExplicitZoomingRef.current) return;
         if (flyToTimeoutRef.current) {
           clearTimeout(flyToTimeoutRef.current);
+          flyToTimeoutRef.current = null;
         }
         mapInstanceRef.current.invalidateSize();
-        mapInstanceRef.current.panTo(e.detail.center, { animate: true, duration: 0.8 });
+        mapInstanceRef.current.panTo(center, { animate: true, duration: 0.8 });
       }
     };
 
@@ -537,12 +557,16 @@ export const MapWorkspace: React.FC = () => {
     }
     lastFramedKeyRef.current = currentKey;
 
+    if (isExplicitZoomingRef.current) {
+      return;
+    }
+
     if (flyToTimeoutRef.current) {
       clearTimeout(flyToTimeoutRef.current);
     }
 
     flyToTimeoutRef.current = setTimeout(() => {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current || isExplicitZoomingRef.current) return;
       const mapInst = mapInstanceRef.current;
       mapInst.invalidateSize();
 
@@ -615,8 +639,8 @@ export const MapWorkspace: React.FC = () => {
     }
     const routeGroup = activeRouteLayerGroupRef.current;
 
-    // Determine active navigation target (navigationTarget has priority, falls back to selectedFeature if navigation was active)
-    const activeTarget = navigationTarget || (activeRouteInfo ? selectedFeature : null);
+    // Determine active navigation target (strictly bound to user's navigationTarget)
+    const activeTarget = navigationTarget;
 
     if (!activeTarget) {
       routeGroup.clearLayers();
@@ -742,14 +766,16 @@ export const MapWorkspace: React.FC = () => {
           routeGroup.addLayer(etaMarker);
         }
 
-        // 6. Smoothly Frame Route in View
-        const bounds = L.latLngBounds(routeResult.coordinates);
-        map.fitBounds(bounds, {
-          paddingTopLeft: [80, 80],
-          paddingBottomRight: [80, 80],
-          maxZoom: 15,
-          animate: true,
-        });
+        // 6. Smoothly Frame Route in View (only if not explicit zooming)
+        if (!isExplicitZoomingRef.current) {
+          const bounds = L.latLngBounds(routeResult.coordinates);
+          map.fitBounds(bounds, {
+            paddingTopLeft: [80, 80],
+            paddingBottomRight: [80, 80],
+            maxZoom: 15,
+            animate: true,
+          });
+        }
       })
       .catch((err) => {
         console.error('Route calculation error:', err);
