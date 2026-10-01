@@ -1427,7 +1427,6 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFeature(feat);
-                        setMapCenterAndZoom([feat.lat, feat.lng], 16);
                         if (expandedDirectionsId === feat.id) {
                           setExpandedDirectionsId(null);
                           if (appState.setNavigationTarget) appState.setNavigationTarget(null);
@@ -1735,23 +1734,15 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
 
       {/* Pagination Controls */}
       {filteredFeatures.length > effectiveVisibleCount && (
-        <div className="pt-2 flex items-center justify-between gap-2">
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => setVisibleCount(prev => Math.max(prev, 10) + 10)}
-            className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer text-center shadow-2xs"
+            className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer text-center shadow-2xs"
           >
             {language === 'ar'
               ? `عرض المزيد (+10 من أصل ${filteredFeatures.length})`
               : `Show Next 10 (of ${filteredFeatures.length})`}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setVisibleCount(filteredFeatures.length)}
-            className="py-2 px-3 rounded-xl bg-geovision-blue hover:bg-blue-700 text-white font-black text-xs transition-all cursor-pointer text-center shrink-0 shadow-md shadow-blue-500/25 border border-blue-600"
-          >
-            {language === 'ar' ? `عرض الكل (${filteredFeatures.length})` : `View All (${filteredFeatures.length})`}
           </button>
         </div>
       )}

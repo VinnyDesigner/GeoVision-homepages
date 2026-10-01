@@ -1392,6 +1392,42 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }
           }
 
           // =========================================================================
+          // Conversational Driving Directions / Routing Engine
+          // =========================================================================
+          else if (
+            lower.includes('direction to') ||
+            lower.includes('directions to') ||
+            lower.includes('route to') ||
+            lower.includes('navigate to') ||
+            lower.includes('how to get to') ||
+            lower.includes('drive to') ||
+            query.includes('الاتجاهات إلى') ||
+            query.includes('المسار إلى') ||
+            query.includes('كيف أصل إلى') ||
+            query.includes('طريق إلى')
+          ) {
+            // Find matched feature in GEO_FEATURES
+            const targetFeat = GEO_FEATURES.find(f =>
+              lower.includes(f.nameEn.toLowerCase()) ||
+              (f.nameAr && query.includes(f.nameAr)) ||
+              lower.includes(f.subcategory.toLowerCase())
+            ) || GEO_FEATURES.find(f => f.nameEn.includes('Yasmina')) || GEO_FEATURES[0];
+
+            if (targetFeat) {
+              matchedFeats = [targetFeat];
+              setSelectedFeature(targetFeat);
+              setNavigationTarget(targetFeat);
+              if (currentView !== 'map') setCurrentView('map');
+
+              responseEn = `Calculating fastest driving route to **${targetFeat.nameEn}** (${targetFeat.distanceKm || '20.4'} km). Real-road turn-by-turn guidance and dynamic telemetry are displayed on the interactive map canvas.`;
+              responseAr = `جاري حساب المسار الأمثل للقيادة نحو **${targetFeat.nameAr || targetFeat.nameEn}** (${targetFeat.distanceKm || '20.4'} كم). تم تفعيل نظام الملاحة والتوجيه خطوة بخطوة على لوحة الخريطة.`;
+              recsEn = ['Show nearby parking', 'Alternative routes', 'Exit navigation'];
+              recsAr = ['عرض مواقف السيارات القريبة', 'المسارات البديلة', 'إنهاء الملاحة'];
+              showToast(language === 'ar' ? `تم تفعيل المسار نحو ${targetFeat.nameAr || targetFeat.nameEn}` : `Navigating to ${targetFeat.nameEn}`);
+            }
+          }
+
+          // =========================================================================
           // CORE SPECIFICATION: The 11 Landmark Example Queries (Try an example)
           // =========================================================================
 

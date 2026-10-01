@@ -16,7 +16,8 @@ import { createGeoVisionMarkerIcon } from '../../utils/markerUtils';
 import { buildSpatialSnapshot } from '../../utils/spatialSnapshotUtils';
 import { ensureAbuDhabiLocation, ABU_DHABI_DEFAULT_CENTER } from '../../utils/locationUtils';
 import { resolveBoundaryForFeatures, type LocationBoundary } from '../../utils/boundaryUtils';
-import { X, Layers, ChevronUp } from 'lucide-react';
+import { X, Layers, ChevronUp, ChevronDown, Car, Navigation, ExternalLink, Footprints, Clock } from 'lucide-react';
+import { fetchDrivingRoute, type RouteResult } from '../../utils/routingUtils';
 
 export const MapWorkspace: React.FC = () => {
   const {
@@ -48,6 +49,7 @@ export const MapWorkspace: React.FC = () => {
     pureMapMode,
     userLocation,
     navigationTarget,
+    setNavigationTarget,
     aiMessages,
   } = useAppState();
 
@@ -59,8 +61,12 @@ export const MapWorkspace: React.FC = () => {
   const drawnLayersGroupRef = useRef<L.LayerGroup | null>(null);
   const bufferCircleRef = useRef<L.Circle | null>(null);
   const aoiPolygonRef = useRef<L.Polygon | null>(null);
-  const activeRouteLineRef = useRef<L.Polyline | null>(null);
-  const activeRouteStartMarkerRef = useRef<L.Marker | null>(null);
+  const activeRouteLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const lastRouteKeyRef = useRef<string>('');
+  const [activeRouteInfo, setActiveRouteInfo] = useState<RouteResult | null>(null);
+  const [showTurnList, setShowTurnList] = useState(false);
+  const [routeMode, setRouteMode] = useState<'driving' | 'walking'>('driving');
+  const [isRoutingLoading, setIsRoutingLoading] = useState(false);
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const boundaryGroupRef = useRef<L.LayerGroup | null>(null);
 
@@ -232,6 +238,7 @@ export const MapWorkspace: React.FC = () => {
       markersGroupRef.current = L.layerGroup().addTo(map);
       drawnLayersGroupRef.current = L.layerGroup().addTo(map);
       boundaryGroupRef.current = L.layerGroup().addTo(map);
+      activeRouteLayerGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
       (window as any).geovisionMap = map;
 
@@ -269,6 +276,11 @@ export const MapWorkspace: React.FC = () => {
       if (userLocationMarkerRef.current) {
         userLocationMarkerRef.current.remove();
         userLocationMarkerRef.current = null;
+      }
+      if (activeRouteLayerGroupRef.current) {
+        activeRouteLayerGroupRef.current.clearLayers();
+        activeRouteLayerGroupRef.current.remove();
+        activeRouteLayerGroupRef.current = null;
       }
       if (boundaryGroupRef.current) {
         boundaryGroupRef.current.clearLayers();
@@ -535,10 +547,7 @@ export const MapWorkspace: React.FC = () => {
       mapInst.invalidateSize();
 
       if (navigationTarget && selectedFeature && navigationTarget.id === selectedFeature.id) {
-        const origin: [number, number] = userLocation || [24.4539, 54.3773];
-        const destination: [number, number] = [selectedFeature.lat, selectedFeature.lng];
-        const routeBounds = L.latLngBounds([origin, destination]);
-        mapInst.flyToBounds(routeBounds, { padding: [90, 90], maxZoom: 15, duration: 1.2 });
+        // Dedicated routing engine handles full road geometry bounds framing
       } else if (selectedFeature) {
         // When a card or feature is selected, smoothly pan to highlight that location without changing zoom!
         mapInst.panTo([selectedFeature.lat, selectedFeature.lng], { animate: true, duration: 0.8 });
@@ -588,66 +597,169 @@ export const MapWorkspace: React.FC = () => {
     };
   }, [selectedFeature, navigationTarget, userLocation, displayFeatures, aiMessages]);
 
-  // Draw Dashed Navigation Route Polyline
+  // Google Maps Driving / Walking Directions Route Engine
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    // 1. Remove existing route polyline & origin marker
-    if (activeRouteLineRef.current) {
-      activeRouteLineRef.current.remove();
-      activeRouteLineRef.current = null;
+    // Ensure active route layer group exists and is actively attached to the current Leaflet map
+    if (!activeRouteLayerGroupRef.current || !map.hasLayer(activeRouteLayerGroupRef.current)) {
+      if (activeRouteLayerGroupRef.current) {
+        try {
+          activeRouteLayerGroupRef.current.remove();
+        } catch {
+          // ignore
+        }
+      }
+      activeRouteLayerGroupRef.current = L.layerGroup().addTo(map);
     }
-    if (activeRouteStartMarkerRef.current) {
-      activeRouteStartMarkerRef.current.remove();
-      activeRouteStartMarkerRef.current = null;
+    const routeGroup = activeRouteLayerGroupRef.current;
+
+    // Determine active navigation target (navigationTarget has priority, falls back to selectedFeature if navigation was active)
+    const activeTarget = navigationTarget || (activeRouteInfo ? selectedFeature : null);
+
+    if (!activeTarget) {
+      routeGroup.clearLayers();
+      setActiveRouteInfo(null);
+      setIsRoutingLoading(false);
+      lastRouteKeyRef.current = '';
+      return;
     }
 
-    if (!selectedFeature) return;
+    const origin: [number, number] = userLocation || [24.4539, 54.3773];
+    const destination: [number, number] = [activeTarget.lat, activeTarget.lng];
+    const targetKey = `${activeTarget.id}_${origin[0].toFixed(4)}_${origin[1].toFixed(4)}_${routeMode}_${language}`;
 
-    const isNavTargetActive = navigationTarget && navigationTarget.id === selectedFeature.id;
+    // If already calculated and layers are actively present on the map, keep them intact without refetching/flicker
+    if (lastRouteKeyRef.current === targetKey && activeRouteInfo) {
+      const layersCount = Object.keys((routeGroup as any)._layers || {}).length;
+      if (layersCount > 0 && map.hasLayer(routeGroup)) {
+        return;
+      }
+    }
 
-    if (isNavTargetActive) {
-      const origin: [number, number] = userLocation || [24.4539, 54.3773];
-      const destination: [number, number] = [selectedFeature.lat, selectedFeature.lng];
+    let isCancelled = false;
+    setIsRoutingLoading(true);
 
-      const polyline = L.polyline([origin, destination], {
-        color: '#2563eb',
-        weight: 5,
-        opacity: 0.95,
-        dashArray: '8, 8',
-        className: 'animated-route-polyline',
-        interactive: false,
-      }).addTo(map);
+    fetchDrivingRoute(origin, destination, routeMode)
+      .then((routeResult) => {
+        if (isCancelled || !mapInstanceRef.current) return;
 
-      const distanceKm = selectedFeature.distanceKm || (
-        Math.hypot(selectedFeature.lat - origin[0], selectedFeature.lng - origin[1]) * 111
-      ).toFixed(1);
+        setIsRoutingLoading(false);
+        setActiveRouteInfo(routeResult);
+        lastRouteKeyRef.current = targetKey;
 
-      polyline.bindTooltip(
-        `<div style="font-family:sans-serif;font-weight:900;font-size:11px;color:#1e40af;padding:4px 10px;background:rgba(255,255,255,0.95);border-radius:10px;border:1.5px solid #2563eb;box-shadow:0 4px 14px rgba(37,99,235,0.3);">
-          📍 Route to ${language === 'ar' ? selectedFeature.nameAr : selectedFeature.nameEn}: <b>${distanceKm} km</b>
-        </div>`,
-        { permanent: true, direction: 'center', interactive: false }
-      );
+        // Ensure group is on map before adding layers
+        if (!map.hasLayer(routeGroup)) {
+          routeGroup.addTo(map);
+        }
+        routeGroup.clearLayers();
 
-      activeRouteLineRef.current = polyline;
+        // 1. Google Maps Outer Casing Polyline (Darker Blue Border for high contrast & depth)
+        const casingLine = L.polyline(routeResult.coordinates, {
+          color: '#1a73e8', // Deep Google Maps Blue casing
+          weight: 8,
+          opacity: 0.9,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: false,
+        });
+        routeGroup.addLayer(casingLine);
 
-      // Add origin pin marker
-      const startIcon = L.divIcon({
-        className: 'route-origin-marker',
-        html: `<div style="width:22px;height:22px;background:#2563eb;border:3.5px solid white;border-radius:50%;box-shadow:0 4px 14px rgba(37,99,235,0.6);"></div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        // 2. Google Maps Inner Core Polyline (Vibrant Google Maps Blue)
+        const coreLine = L.polyline(routeResult.coordinates, {
+          color: routeMode === 'walking' ? '#10b981' : '#4285f4', // Green for walking, Google Blue for driving
+          weight: 5,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: true,
+        });
+        routeGroup.addLayer(coreLine);
+
+        // 3. Google Maps Origin Marker (Pulsing blue GPS dot with white ring)
+        const startIcon = L.divIcon({
+          className: 'gmaps-origin-marker',
+          html: `
+            <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;">
+              <span style="position:absolute;width:26px;height:26px;border-radius:50%;background:#4285f4;opacity:0.35;animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></span>
+              <span style="position:relative;width:15px;height:15px;border-radius:50%;background:#1a73e8;border:2.5px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.35);z-index:2;"></span>
+            </div>
+          `,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        });
+        const startMarker = L.marker(origin, { icon: startIcon, zIndexOffset: 1100 });
+        startMarker.bindTooltip(
+          `<div style="font-family:inherit;font-weight:700;font-size:11px;color:#1e3a8a;padding:3px 8px;background:#fff;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">📍 ${
+            language === 'ar' ? 'نقطة الانطلاق (موقعي الحالي)' : 'Starting Location'
+          }</div>`,
+          { permanent: false, direction: 'top' }
+        );
+        routeGroup.addLayer(startMarker);
+
+        // 4. Google Maps Destination Marker (Classic Red Teardrop Pin)
+        const destIcon = L.divIcon({
+          className: 'gmaps-dest-marker',
+          html: `
+            <div style="position:relative;width:34px;height:42px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.35));transform:translateY(-8px);cursor:pointer;">
+              <svg width="34" height="42" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 0C5.37258 0 0 5.37258 0 12C0 19.5 12 30 12 30C12 30 24 19.5 24 12C24 5.37258 18.6274 0 12 0Z" fill="#EA4335"/>
+                <circle cx="12" cy="11" r="5" fill="#FFFFFF"/>
+                <circle cx="12" cy="11" r="2.5" fill="#B31412"/>
+              </svg>
+            </div>
+          `,
+          iconSize: [34, 42],
+          iconAnchor: [17, 38],
+        });
+        const destMarker = L.marker(destination, { icon: destIcon, zIndexOffset: 1200 });
+        destMarker.bindTooltip(
+          `<div style="font-family:inherit;font-weight:800;font-size:11.5px;color:#b91c1c;padding:3px 8px;background:#fff;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">📍 ${
+            language === 'ar' ? activeTarget.nameAr : activeTarget.nameEn
+          }</div>`,
+          { permanent: false, direction: 'top' }
+        );
+        routeGroup.addLayer(destMarker);
+
+        // 5. Floating Google Maps ETA Pill midway along the route
+        if (routeResult.coordinates.length > 2) {
+          const midIndex = Math.floor(routeResult.coordinates.length * 0.45);
+          const midCoord = routeResult.coordinates[midIndex];
+          const etaPillIcon = L.divIcon({
+            className: 'gmaps-eta-pill-icon',
+            html: `
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#ffffff;padding:5px 12px;border-radius:20px;border:1.5px solid #1a73e8;box-shadow:0 4px 14px rgba(26,115,232,0.28);font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;color:#1e293b;white-space:nowrap;transform:translate(-50%, -50%);cursor:default;">
+                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#16a34a;"></span>
+                <span style="color:#16a34a;font-weight:800;">${routeResult.durationMin} min</span>
+                <span style="color:#64748b;font-weight:500;">(${routeResult.distanceKm} km)</span>
+              </div>
+            `,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          });
+          const etaMarker = L.marker(midCoord, { icon: etaPillIcon, zIndexOffset: 1050 });
+          routeGroup.addLayer(etaMarker);
+        }
+
+        // 6. Smoothly Frame Route in View
+        const bounds = L.latLngBounds(routeResult.coordinates);
+        map.fitBounds(bounds, {
+          paddingTopLeft: [80, 80],
+          paddingBottomRight: [80, 80],
+          maxZoom: 15,
+          animate: true,
+        });
+      })
+      .catch((err) => {
+        console.error('Route calculation error:', err);
+        setIsRoutingLoading(false);
       });
-      const startMarker = L.marker(origin, { icon: startIcon }).addTo(map);
-      startMarker.bindTooltip(
-        `<div style="font-family:sans-serif;font-weight:900;font-size:10.5px;color:#1e3a8a;padding:2px 6px;">📍 ${language === 'ar' ? 'موقعي الحالي' : 'Current Area Origin'}</div>`,
-        { permanent: false, direction: 'top', interactive: false }
-      );
-      activeRouteStartMarkerRef.current = startMarker;
-    }
-  }, [selectedFeature, userLocation, language, navigationTarget]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [navigationTarget, selectedFeature, userLocation?.[0], userLocation?.[1], language, routeMode]);
 
   // Render User Current Location Pulsing GPS Indicator
   useEffect(() => {
@@ -1237,6 +1349,158 @@ export const MapWorkspace: React.FC = () => {
             </div>
 
             <SmartFilterPanel />
+          </div>
+        )}
+
+        {/* Floating Google Maps Directions HUD Card */}
+        {!pureMapMode && (navigationTarget || (activeRouteInfo && selectedFeature)) && (
+          <div className="absolute top-[76px] sm:top-[86px] left-3 sm:left-[80px] rtl:left-auto rtl:right-3 sm:rtl:right-[80px] z-[650] w-[calc(100%-24px)] sm:w-80 max-w-sm glass-level-3 rounded-3xl p-3 sm:p-3.5 shadow-2xl border border-white/80 dark:border-slate-800 animate-slide-in flex flex-col overflow-hidden pointer-events-auto">
+            {/* Header: Mode & Close Button */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/30">
+                  <Navigation className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                    {language === 'ar' ? 'توجيهات المسار' : 'Driving Directions'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-semibold truncate max-w-[170px]">
+                    {language === 'ar' ? (navigationTarget?.nameAr || selectedFeature?.nameAr) : (navigationTarget?.nameEn || selectedFeature?.nameEn)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNavigationTarget(null);
+                  setActiveRouteInfo(null);
+                  if (activeRouteLayerGroupRef.current) {
+                    activeRouteLayerGroupRef.current.clearLayers();
+                  }
+                  lastRouteKeyRef.current = '';
+                }}
+                className="w-7 h-7 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer flex items-center justify-center transition-colors"
+                title={language === 'ar' ? 'إغلاق الملاحة' : 'Exit Directions'}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Travel Mode Toggle (Drive / Walk) */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl mb-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setRouteMode('driving')}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  routeMode === 'driving'
+                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-sky-300 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Car className="w-3.5 h-3.5" />
+                <span>{language === 'ar' ? 'بالسيارة' : 'Drive'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRouteMode('walking')}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  routeMode === 'walking'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Footprints className="w-3.5 h-3.5" />
+                <span>{language === 'ar' ? 'مشياً' : 'Walk'}</span>
+              </button>
+            </div>
+
+            {/* ETA & Distance Hero Card */}
+            {isRoutingLoading ? (
+              <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-slate-800/60 border border-blue-100 dark:border-slate-700/60 flex items-center justify-center gap-2 text-xs font-bold text-blue-600">
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></span>
+                <span>{language === 'ar' ? 'جاري حساب المسار الأمثل...' : 'Calculating fastest route...'}</span>
+              </div>
+            ) : activeRouteInfo ? (
+              <div className="space-y-2">
+                <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-baseline justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        {activeRouteInfo.durationMin}
+                      </span>
+                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                        {language === 'ar' ? 'دقيقة' : 'min'}
+                      </span>
+                    </div>
+                    <span className="text-xs font-black text-slate-500 dark:text-slate-400">
+                      {activeRouteInfo.distanceKm} km
+                    </span>
+                  </div>
+
+                  <div className="mt-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span className="text-slate-400 font-normal">{language === 'ar' ? 'عبر:' : 'Via:'}</span>
+                    <span className="truncate">
+                      {language === 'ar' ? activeRouteInfo.summaryAr : activeRouteInfo.summaryEn}
+                    </span>
+                  </div>
+
+                  <div className="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <span>⚡</span>
+                    <span>{language === 'ar' ? 'المسار الأسرع مع حركة المرور الاعتيادية' : 'Fastest route now, typical traffic'}</span>
+                  </div>
+                </div>
+
+                {/* Collapsible Step-by-Step Directions */}
+                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowTurnList(!showTurnList)}
+                    className="w-full px-3 py-2 text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-blue-500" />
+                      <span>{language === 'ar' ? `خطوات المسار (${activeRouteInfo.steps.length})` : `Step-by-step turns (${activeRouteInfo.steps.length})`}</span>
+                    </div>
+                    {showTurnList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+
+                  {showTurnList && (
+                    <div className="p-2.5 pt-0 max-h-44 overflow-y-auto space-y-2 border-t border-slate-100 dark:border-slate-800">
+                      {activeRouteInfo.steps.map((st, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-[11px] py-1 border-b border-slate-50 dark:border-slate-800/40 last:border-b-0">
+                          <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-sky-300 font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                              {language === 'ar' ? st.instructionAr : st.instructionEn}
+                            </p>
+                            <span className="text-[9.5px] font-semibold text-slate-400">
+                              {st.distanceMeters >= 1000
+                                ? `${(st.distanceMeters / 1000).toFixed(1)} km`
+                                : `${Math.round(st.distanceMeters)} m`}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Open in Google Maps External Action Button */}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${(userLocation || [24.4539, 54.3773])[0]},${(userLocation || [24.4539, 54.3773])[1]}&destination=${(navigationTarget || selectedFeature)?.lat ?? 24.4275},${(navigationTarget || selectedFeature)?.lng ?? 54.5765}&travelmode=${routeMode === 'walking' ? 'walking' : 'driving'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2 px-3 rounded-2xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200/80 dark:border-blue-800 text-blue-600 dark:text-sky-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>{language === 'ar' ? 'فتح في خرائط Google' : 'Open in Google Maps'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            ) : null}
           </div>
         )}
 
