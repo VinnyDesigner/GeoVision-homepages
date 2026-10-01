@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import { useAppState } from '../../context/AppStateContext';
 import { createGeoVisionMarkerIcon } from '../../utils/markerUtils';
@@ -351,12 +352,12 @@ export const PrintMapModal: React.FC = () => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center pt-20 sm:pt-24 pb-6 px-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[calc(100vh-120px)] overflow-hidden">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[calc((100vh-3.5rem)/var(--screen-zoom,1))] h-auto overflow-hidden">
         
         {/* FIXED HEADER */}
-        <div className="shrink-0 p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-3xl">
+        <div className="shrink-0 p-3.5 sm:p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-geovision-blue text-white flex items-center justify-center font-black shadow-md shadow-blue-500/30 border border-blue-400/30">
               <Printer className="w-5 h-5" />
@@ -386,7 +387,7 @@ export const PrintMapModal: React.FC = () => {
         </div>
 
         {/* SCROLLABLE INNER BODY CONTENT */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/50">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-50/50 dark:bg-slate-950/50">
           {/* Layout & Format Selector Bar */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
@@ -617,7 +618,7 @@ export const PrintMapModal: React.FC = () => {
         </div>
 
         {/* FIXED FOOTER */}
-        <div className="shrink-0 p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 rounded-b-3xl flex items-center justify-between gap-3">
+        <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/95 rounded-b-2xl sm:rounded-b-3xl flex items-center justify-between gap-3 shadow-lg z-10">
           <button
             onClick={() => {
               setPrintModalOpen(false);
@@ -660,4 +661,6 @@ export const PrintMapModal: React.FC = () => {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

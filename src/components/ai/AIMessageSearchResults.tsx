@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { GeoFeature } from '../../types';
 import { useAppState } from '../../context/AppStateContext';
 import {
@@ -1819,12 +1820,12 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
       {/* ----------------------------------------------------------------------- */}
       {/* 1. EXECUTIVE DETAILED QUERY ANALYTICS MODAL */}
       {/* ----------------------------------------------------------------------- */}
-      {showAnalytics && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center pt-20 sm:pt-24 pb-6 px-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[calc(100vh-120px)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      {showAnalytics && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[calc((100vh-3.5rem)/var(--screen-zoom,1))] h-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
             {/* FIXED HEADER */}
-            <div className="shrink-0 p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-3xl">
+            <div className="shrink-0 p-3.5 sm:p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-t-3xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-black border border-indigo-200 dark:border-indigo-800">
                   <BarChart2 className="w-5 h-5" />
@@ -1848,7 +1849,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* SCROLLABLE INNER BODY CONTENT */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
               {/* KPI Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 text-center space-y-1">
@@ -1969,7 +1970,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* FIXED FOOTER */}
-            <div className="shrink-0 p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 rounded-b-3xl flex items-center justify-end gap-3">
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/95 rounded-b-2xl sm:rounded-b-3xl flex items-center justify-end gap-3 shadow-lg z-10">
               <button
                 type="button"
                 onClick={() => setShowAnalytics(false)}
@@ -1992,18 +1993,19 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ----------------------------------------------------------------------- */}
       {/* 2. OFFICIAL PRINT & EXPORT PDF REPORT MODAL */}
       {/* ----------------------------------------------------------------------- */}
-      {showPrintReport && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center pt-20 sm:pt-24 pb-6 px-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl max-w-5xl w-full shadow-2xl flex flex-col max-h-[calc(100vh-120px)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      {showPrintReport && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl max-w-5xl w-full shadow-2xl flex flex-col max-h-[calc((100vh-3.5rem)/var(--screen-zoom,1))] h-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
             {/* FIXED HEADER WITH CONTROLS & LAYOUT SWITCHER */}
-            <div className="shrink-0 p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-t-3xl space-y-4">
+            <div className="shrink-0 p-3.5 sm:p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-t-3xl space-y-3">
               {/* Header Title Row */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -2111,7 +2113,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* SCROLLABLE INNER BODY CONTENT - A4 PAPER SHEET SIMULATION */}
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-100/90 dark:bg-slate-950/90">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 bg-slate-100/90 dark:bg-slate-950/90">
               <div
                 id="sdi-printable-report"
                 className={`mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl p-6 sm:p-8 space-y-6 text-slate-900 dark:text-slate-100 transition-all duration-300 ${printOrientation === 'landscape' ? 'max-w-4xl' : 'max-w-2xl'
@@ -2393,7 +2395,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* FIXED FOOTER WITH ACTION BUTTONS */}
-            <div className="shrink-0 p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 rounded-b-3xl flex items-center justify-between gap-3">
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/95 rounded-b-2xl sm:rounded-b-3xl flex items-center justify-between gap-3 shadow-lg z-10">
               <button
                 type="button"
                 onClick={() => setShowPrintReport(false)}
@@ -2424,18 +2426,19 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ----------------------------------------------------------------------- */}
       {/* 3. DIRECTIONS / ROUTING MODAL */}
       {/* ----------------------------------------------------------------------- */}
-      {activeRouteTarget && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center pt-20 sm:pt-24 pb-6 px-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-120px)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      {activeRouteTarget && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[calc((100vh-3.5rem)/var(--screen-zoom,1))] h-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
             {/* FIXED HEADER */}
-            <div className="shrink-0 p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-3xl">
+            <div className="shrink-0 p-3.5 sm:p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-t-3xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-300 flex items-center justify-center font-black border border-emerald-200 dark:border-emerald-800">
                   <Navigation className="w-5 h-5" />
@@ -2459,7 +2462,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* SCROLLABLE INNER BODY CONTENT */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4">
               {/* Origin & Destination Card */}
               <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-slate-800/80 border border-emerald-200/80 dark:border-slate-700 space-y-3">
                 <div className="flex items-start gap-2.5 text-xs">
@@ -2531,7 +2534,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
             {/* FIXED FOOTER */}
-            <div className="shrink-0 p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 rounded-b-3xl flex items-center justify-end gap-3">
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/95 rounded-b-2xl sm:rounded-b-3xl flex items-center justify-end gap-3 shadow-lg z-10">
               <button
                 type="button"
                 onClick={() => setActiveRouteTarget(null)}
@@ -2557,7 +2560,8 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

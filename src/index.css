@@ -1062,39 +1062,70 @@ html.view-home5 .home5-viewport {
   overflow: hidden !important;
 }
 
+:root {
+  --screen-zoom: 1;
+}
+
 /* Universal Proportional Display Scaling for Large Screens (2K, 3K, 4K, 5K)
    Ensures all pages (Home 5, Map Viewer, About Us, Categories, Help, Profile, etc.)
    maintain consistent physical proportions, typography, and layout across all
    large desktop displays (e.g. 2560x1440, 3840x2160, 5120x2880) identical to 1080p desktop. */
 @media (min-width: 2100px) and (min-height: 900px) {
+  :root {
+    --screen-zoom: 1.25;
+  }
   html {
     zoom: 1.25;
   }
 }
 
 @media (min-width: 2500px) and (min-height: 1050px) {
+  :root {
+    --screen-zoom: 1.333;
+  }
   html {
     zoom: 1.333;
   }
 }
 
 @media (min-width: 2900px) and (min-height: 1200px) {
+  :root {
+    --screen-zoom: 1.6;
+  }
   html {
     zoom: 1.6;
   }
 }
 
 @media (min-width: 3400px) and (min-height: 1400px) {
+  :root {
+    --screen-zoom: 2.0;
+  }
   html {
     zoom: 2.0;
   }
 }
 
 @media (min-width: 4600px) and (min-height: 1800px) {
+  :root {
+    --screen-zoom: 2.666;
+  }
   html {
     zoom: 2.666;
   }
 }
+
+/* Universal Viewport Boundary Protection for Modal Dialogs on Large & Scaled Displays:
+   Prevents CSS zoom from expanding fixed modals beyond the physical display viewport.
+   Ensures headers, footers, action buttons, and scrollable bodies are 100% visible, fully interactive,
+   and comfortably centered across all screen sizes (1080p, 1440p, 2K, 3K, 4K, 5K, ultrawide). */
+.fixed.inset-0[class*="z-"] > div,
+.fixed.inset-0.z-\[9999\] > div,
+.fixed.inset-0.z-\[999\] > div {
+  max-height: calc((100vh - 3.5rem) / var(--screen-zoom, 1)) !important;
+  height: auto !important;
+}
+
 
 
 
