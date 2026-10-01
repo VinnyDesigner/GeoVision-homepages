@@ -270,7 +270,7 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   const [activeRouteTarget, setActiveRouteTarget] = useState<GeoFeature | null>(null);
 
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
-  const [expandedAccordionId, setExpandedAccordionId] = useState<string | null>(() => selectedFeature?.id || null);
+  const [expandedAccordionId, setExpandedAccordionId] = useState<string | null>(null);
   const [activeInlineTab, setActiveInlineTab] = useState<'overview' | 'nearby' | 'details' | 'related'>('overview');
   const [expandedDirectionsId, setExpandedDirectionsId] = useState<string | null>(null);
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState<number>(3);
@@ -279,20 +279,9 @@ export const AIMessageSearchResults: React.FC<AIMessageSearchResultsProps> = ({
   const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
 
   const featureListRef = useRef<HTMLDivElement>(null);
-  const lastSelectedFeatureIdRef = useRef<string | null>(selectedFeature?.id || null);
 
   const setGuestPromptOpen = appState.setGuestPromptOpen;
   const user = appState.user;
-
-  // Single source of truth: sync expanded accordion with selectedFeature when selected from outside or returning from Details
-  useEffect(() => {
-    if (selectedFeature?.id && selectedFeature.id !== lastSelectedFeatureIdRef.current) {
-      lastSelectedFeatureIdRef.current = selectedFeature.id;
-      setExpandedAccordionId(selectedFeature.id);
-    } else if (!selectedFeature) {
-      lastSelectedFeatureIdRef.current = null;
-    }
-  }, [selectedFeature?.id]);
 
 
   // Sync with global appState.selectedCategoryIds when user selects a category anywhere in the app
